@@ -1,0 +1,3275 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool In Hóa Đơn - V9.0 (Auto Stock & Smart Search)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+
+
+
+    <style>
+        /* --- CẤU HÌNH CƠ BẢN --- */
+        :root {
+            --primary-color: #004e92;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --text-color: #333;
+        }
+
+
+
+
+        body, input, select, button, table, h1, h2, h3, p, span, div, textarea {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+        body { 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            gap: 20px; 
+            justify-content: center; 
+            align-items: flex-start; 
+            flex-wrap: wrap; 
+        }
+        
+        /* --- BẢNG ĐIỀU KHIỂN (LEFT SIDE) --- */
+        .control-panel-wrapper {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+
+
+
+        /* CARD STYLE (CÁC NGĂN) */
+        .section-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+
+
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+
+
+
+        /* INPUT STYLES */
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .form-group { flex: 1; position: relative; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 12px; color: #555; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
+            box-sizing: border-box; font-size: 13px; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+
+
+
+        /* BUTTONS */
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; font-size: 13px; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-mini { padding: 4px 8px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 3px; width: auto;}
+        
+        .btn-primary { background-color: #007bff; }
+        .btn-warning { background-color: #f39c12; color: #fff; }
+        .btn-success { background-color: #27ae60; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-info { background-color: #17a2b8; }
+        .btn-excel { background-color: #217346; color: white; } /* Excel Green */
+        .btn-purple { background-color: #8e44ad; color: white; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-confirm { background-color: #004e92; border: 2px solid #003666; text-transform: uppercase; }
+        
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; padding: 0; color: #666; transition: 0.2s; }
+        .btn-icon:hover { color: var(--primary-color); }
+
+
+
+
+        /* SPECIFIC COMPONENTS */
+        .price-preview { color: #d35400; font-weight: bold; font-size: 13px; margin-top: 5px; display: block; text-align: right; }
+        
+        #dynamicInputs { 
+            background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; 
+            border-radius: 5px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; 
+        }
+        .code-entry-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+        .code-entry-row span { font-size: 11px; font-weight: bold; width: 20px; color: #999; }
+        .code-entry-row input { font-size: 12px; padding: 5px; }
+
+
+
+
+        .bulk-import-box { 
+            background: #fff8e1; border: 1px dashed #f39c12; padding: 10px; 
+            border-radius: 5px; margin-bottom: 10px; display: none; /* Hidden by default */
+        }
+        .bulk-toggle { 
+            font-size: 12px; color: #d35400; cursor: pointer; text-decoration: underline; 
+            margin-bottom: 5px; display: inline-block;
+        }
+
+
+
+
+        /* CART LIST */
+        .cart-list-container { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 5px; min-height: 50px; }
+        .temp-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #fff; padding: 6px 10px; margin-bottom: 5px; 
+            border-radius: 4px; border: 1px solid #eee; font-size: 13px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        
+        /* PAYMENT OPTIONS */
+        .payment-options { display: flex; gap: 5px; margin-bottom: 10px; }
+        .pay-btn { 
+            flex: 1; padding: 8px; border: 1px solid #ddd; background: #fff; 
+            cursor: pointer; border-radius: 4px; font-size: 12px; font-weight: 600; 
+            transition: 0.2s; color: #555;
+        }
+        .pay-btn:hover { background: #f1f1f1; }
+        .pay-btn.active { background: #007bff; color: white; border-color: #007bff; }
+        .pay-btn.debt-mode.active { background: #c0392b !important; color: white !important; border-color: #c0392b; }
+        
+        .status-btn.active-unpaid { background: #e74c3c !important; color: white; border-color: #e74c3c; }
+        .status-btn.active-paid { background: #27ae60 !important; color: white; border-color: #27ae60; }
+
+
+
+
+        /* REVENUE BOX */
+        .revenue-card { background: linear-gradient(135deg, #2c3e50, #4ca1af); color: white; padding: 15px; border-radius: 10px; text-align: center; }
+        .revenue-card h3 { margin: 0; font-size: 13px; opacity: 0.8; font-weight: normal; }
+        .revenue-card .money { font-size: 24px; font-weight: 800; margin: 5px 0; display: block; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+
+
+
+        /* --- SUGGESTION LIST --- */
+        .suggestion-list { 
+            position: absolute; top: 100%; left: 0; right: 0; background: white; 
+            border: 1px solid #ddd; z-index: 1000; max-height: 200px; 
+            overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            border-radius: 0 0 4px 4px; display: none; 
+        }
+        .suggestion-item { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
+        .suggestion-item:hover { background-color: #f0f8ff; color: #004e92; }
+
+
+
+
+        /* SMART SEARCH STYLE */
+        #smartSearchBox {
+            position: relative;
+            margin-bottom: 10px;
+            z-index: 101;
+        }
+        #inpSmartSearch {
+            border: 2px solid #2980b9;
+            background-color: #fbfdff;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        #smartSearchResults {
+            position: absolute; width: 100%; background: white; 
+            border: 1px solid #2980b9; border-top:none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+            z-index: 200; display: none; max-height: 250px; overflow-y: auto;
+            border-radius: 0 0 5px 5px;
+        }
+        .smart-item {
+            padding: 10px; border-bottom: 1px solid #eee; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .smart-item:hover { background: #eaf2f8; }
+        .smart-name { font-weight: bold; color: #2980b9; }
+        .smart-price { color: #d35400; font-weight: bold; font-size: 14px; }
+
+
+
+
+        /* STOCK TABLE STYLE */
+        .stock-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .stock-table th { background: #eee; padding: 6px; text-align: left; border: 1px solid #ddd; }
+        .stock-table td { padding: 6px; border: 1px solid #ddd; }
+        .stock-count { font-weight: bold; color: #27ae60; }
+        .stock-empty { color: #e74c3c; }
+
+
+
+
+        /* --- MODAL STYLES --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 9999; display: none; 
+            justify-content: center; align-items: center; 
+            backdrop-filter: blur(2px);
+        }
+        .modal-box { 
+            background: white; width: 95%; max-width: 800px; max-height: 90vh; 
+            border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); 
+            display: flex; flex-direction: column; overflow: hidden; 
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #f9f9f9; }
+        
+        .modal-header.debt-type { background: linear-gradient(to right, #c0392b, #e74c3c); }
+        .modal-header.settings-type { background: linear-gradient(to right, #34495e, #2c3e50); }
+        .modal-header.info-type { background: linear-gradient(to right, #007bff, #0056b3); }
+        .modal-header.history-type { background: linear-gradient(to right, #16a085, #1abc9c); }
+        .modal-header.progress-type { background: linear-gradient(to right, #2c3e50, #004e92); }
+
+
+
+
+        /* TABS IN MODAL */
+        .tab-nav { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 15px; background: white; border-radius: 5px 5px 0 0; flex-wrap: wrap; }
+        .tab-item { padding: 10px 15px; cursor: pointer; font-weight: 600; font-size: 13px; color: #777; border-bottom: 3px solid transparent; }
+        .tab-item:hover { color: #333; }
+        .tab-item.active { border-bottom-color: var(--primary-color); color: var(--primary-color); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* DATA BOXES */
+        .data-box-section {
+            padding: 15px; border-radius: 6px; border: 1px dashed #ccc; background: white; margin-bottom: 15px;
+        }
+        .data-box-title { font-weight: bold; margin-bottom: 10px; color: #333; display: flex; align-items: center; gap: 5px; }
+
+
+
+
+        /* --- PROGRESS BAR STYLE --- */
+        .progress-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin: 10px 0; overflow: hidden; height: 20px; }
+        .progress-bar { width: 0%; height: 100%; background-color: #27ae60; text-align: center; line-height: 20px; color: white; font-size: 11px; transition: width 0.2s; }
+        .time-estimate { font-size: 12px; color: #666; font-style: italic; text-align: center; display: block; }
+
+
+
+
+        /* --- INVOICE PREVIEW (RIGHT SIDE) --- */
+        .invoice-box { 
+            width: 80mm; /* Mặc định K80 */
+            background: white; box-shadow: 0 5px 25px rgba(0,0,0,0.1); 
+            color: #333; font-size: 13px; box-sizing: border-box; 
+            position: relative; overflow: hidden; padding: 0; 
+            align-self: flex-start;
+            transition: width 0.3s ease;
+        }
+
+
+
+
+        /* Styles for K57 (57mm) */
+        .invoice-box.size-k57 { width: 57mm; }
+        .invoice-box.size-k57 .inv-brand { font-size: 18px; }
+        .invoice-box.size-k57 .inv-body { padding: 10px 10px; }
+        .invoice-box.size-k57 .bill-table th, 
+        .invoice-box.size-k57 .bill-table td,
+        .invoice-box.size-k57 .info-row,
+        .invoice-box.size-k57 .total-row { font-size: 11px; }
+        .invoice-box.size-k57 .final-price { font-size: 16px; }
+        .invoice-box.size-k57 .card-box { padding: 4px; }
+        .invoice-box.size-k57 .card-val { font-size: 12px; }
+
+
+
+
+        /* Invoice styles kept from original */
+        .inv-header { background: linear-gradient(135deg, #004e92, #000428); color: white; padding: 20px 15px; position: relative; border-bottom: 4px solid #f39c12; }
+        .inv-header.debt-header { background: linear-gradient(135deg, #c0392b, #8e44ad); border-bottom: 4px solid #e74c3c; } 
+        .inv-brand { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+        .inv-slogan { font-size: 11px; opacity: 0.9; margin: 5px 0 0 0; font-style: italic; }
+        .id-qr-box { position: absolute; top: 10px; right: 10px; background: white; padding: 4px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .id-qr-box img { width: 65px !important; height: 65px !important; display: block; }
+        .inv-body { padding: 15px 20px; }
+        .inv-title-section { text-align: center; margin-bottom: 15px; }
+        .inv-title { font-size: 16px; font-weight: bold; color: #004e92; text-transform: uppercase; border-bottom: 1px dashed #ccc; display: inline-block; padding-bottom: 3px; }
+        .inv-meta { font-size: 12px; color: #666; margin-top: 5px; }
+        .inv-customer-info { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #004e92; }
+        .info-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px; }
+        .text-bold { font-weight: bold; }
+        .bill-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }
+        .bill-table th { text-align: left; padding: 5px 0; font-size: 11px; color: #888; text-transform: uppercase; border-bottom: 1px solid #eee; }
+        .bill-table td { padding: 8px 0; vertical-align: top; border-bottom: 1px dashed #eee; }
+        .item-name { font-weight: bold; font-size: 14px; color: #333; display: block; }
+        .item-sub { font-size: 12px; color: #777; }
+        .card-box { margin-top: 5px; background: #fff8e1; border: 1px dashed #f39c12; padding: 6px; border-radius: 4px; position: relative; }
+        .card-line { display: block; font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #333; letter-spacing: 0.5px; }
+        .card-label { font-weight: bold; color: #d35400; font-size: 11px; margin-right: 5px; font-family: Arial, sans-serif; }
+        .card-val { font-weight: bold; font-size: 14px; }
+        .provisional-hidden .card-val, .provisional-hidden .card-seri { display: none !important; }
+        .provisional-hidden .hidden-msg { display: block !important; color: #888; font-style: italic; font-size: 11px; text-align: center; padding: 5px; }
+        .hidden-msg { display: none; }
+        .total-section { background: #eef2f3; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .final-price { font-size: 20px; font-weight: 800; color: #c0392b; }
+        .public-note-box { margin-top: 15px; border: 1px dashed #555; padding: 10px; border-radius: 5px; background-color: #fff; font-size: 12px; display: none; }
+        .qr-section { text-align: center; margin-top: 15px; background: white; padding: 10px; border: 1px solid #eee; border-radius: 8px; display: none; }
+        .qr-section img { width: 140px; height: auto; display: block; margin: 0 auto; }
+        .qr-note { font-size: 11px; margin-top: 5px; color: #555; }
+        .inv-footer { text-align: center; margin-top: 20px; font-size: 11px; color: #999; padding-top: 10px; border-top: 1px solid #eee; }
+        .barcode-section { text-align: center; margin-top: 10px; margin-bottom: 5px;}
+        .barcode-section svg { max-width: 100%; height: 40px; }
+        .paid-stamp { color: #27ae60; font-weight: bold; border: 2px solid #27ae60; padding: 2px 6px; border-radius: 4px; display: inline-block; transform: rotate(-5deg); font-size: 11px; letter-spacing: 1px;}
+        .debt-stamp { color: #c0392b; font-weight: bold; border: 2px solid #c0392b; padding: 2px 6px; border-radius: 4px; display: inline-block; transform: rotate(-5deg); font-size: 14px; letter-spacing: 1px;}
+        
+        /* Utility styles */
+        .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(18px); }
+        
+        .customer-table, .cus-history-table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; }
+        .customer-table th, .cus-history-table th { background: #f1f1f1; padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .customer-table td, .cus-history-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .customer-table tr:hover { background-color: #f0f8ff; cursor: pointer; }
+        
+        /* Catalog Settings Style */
+        .catalog-container { display: flex; height: 350px; border: 1px solid #ddd; background: white; }
+        .catalog-col { flex: 1; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .cat-header { background: #f8f9fa; padding: 8px; font-weight: bold; text-align: center; border-bottom: 1px solid #ddd; font-size: 13px; }
+        .cat-list { overflow-y: auto; flex: 1; padding: 5px; }
+        .cat-item { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; }
+        .cat-item:hover { background-color: #f0f8ff; }
+        .cat-item.active { background-color: #e7f1ff; color: #0056b3; font-weight: bold; }
+        
+        .price-input-group { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; background: #fafafa; padding: 5px; border-radius: 3px; border: 1px solid #eee; }
+        .price-input-group input { padding: 4px; font-size: 12px; width: 60px; border: 1px solid #ccc; border-radius: 3px;}
+
+
+
+
+        @media print {
+            body { background: white; padding: 0; margin: 0; visibility: hidden; }
+            .control-panel-wrapper, .modal-overlay, #smartSearchBox { display: none !important; }
+            .invoice-box { visibility: visible; position: absolute; left: 0; top: 0; box-shadow: none; margin: 0; }
+            
+            /* PRINT HISTORY MODE: Show history invoice only */
+            body.printing-history .modal-overlay#historyDetailModal { display: flex !important; visibility: visible; position: absolute; left:0; top:0; height:auto; background:white; }
+            body.printing-history .modal-box { box-shadow: none; border: none; }
+            body.printing-history .modal-box .invoice-box { visibility: visible; position: static; width: 100%; }
+            body.printing-history .no-print { display: none !important; }
+
+
+
+
+            @page { margin: 0; size: auto; }
+        }
+    </style>
+</head>
+<body>
+
+
+
+
+    <div class="control-panel-wrapper">
+        
+        <div class="section-card">
+            <div class="section-header">
+                <h3 class="section-title">👤 Thông tin Đơn hàng</h3>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-icon" onclick="openHistoryModal()" title="Lịch sử đơn hàng">🕒</button>
+                    <button class="btn-icon" onclick="openDebtModal()" title="Sổ nợ">📖</button>
+                    <button class="btn-icon" onclick="openSettings()" title="Cài đặt">⚙️</button>
+                </div>
+            </div>
+            
+            <div id="smartSearchBox">
+                <input type="text" id="inpSmartSearch" placeholder="⚡ Tìm nhanh (VD: Garena 20, Viettel 50...)" oninput="handleSmartSearch(event)" autocomplete="off">
+                <div id="smartSearchResults"></div>
+            </div>
+
+
+
+
+            <div id="editModeNotice" style="display:none; background:#fff3cd; color:#856404; padding:8px; border-radius:4px; margin-bottom:10px; font-size:13px; align-items:center; justify-content:space-between;">
+                <span>✏️ Đang sửa đơn: <b id="lblEditID">...</b></span>
+                <button class="btn-mini btn-secondary" onclick="cancelEditMode()">Hủy</button>
+            </div>
+
+
+
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 0.7;">
+                    <label>Mã HĐ</label>
+                    <input type="text" id="inpInvoiceID" style="font-weight:bold; color:#d35400; text-align:center;" oninput="updateInvoiceHeader();">
+                </div>
+                <div class="form-group">
+                    <label>Ngày lập</label>
+                    <input type="date" id="inpDate" onchange="updateInvoiceHeader()">
+                </div>
+                <div class="form-group" style="flex: 0.6;">
+                    <label>Giờ</label>
+                    <input type="time" id="inpTime" onchange="updateInvoiceHeader()">
+                </div>
+            </div>
+
+
+
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 1.5;">
+                    <label>Khách hàng <span id="lblCreditHint" style="display:none; color:#e67e22; font-size:11px;">(Có tiền thừa!)</span></label>
+                    <input type="text" id="inpName" value="Khách lẻ" 
+                           oninput="updateInvoiceHeader(); suggestCustomer(this, 'name')" 
+                           onfocus="suggestCustomer(this, 'name')"
+                           autocomplete="off" placeholder="Nhập tên khách...">
+                    <div id="suggestList_name" class="suggestion-list"></div>
+                </div>
+                <div class="form-group">
+                     <label>Số điện thoại</label>
+                    <input type="text" id="inpPhone" maxlength="10" 
+                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateInvoiceHeader(); suggestCustomer(this, 'phone'); checkOldDebt(this.value);" 
+                           onfocus="suggestCustomer(this, 'phone')"
+                           placeholder="09xxxxxxxx"
+                           autocomplete="off">
+                     <div id="suggestList_phone" class="suggestion-list"></div>
+                </div>
+            </div>
+           <div id="creditNotificationBox" style="display:none; background:#d4edda; color:#155724; padding:8px; font-size:12px; border-radius:4px; margin-bottom:5px; align-items:center; justify-content:space-between;">
+                <span>💰 Tiền thừa: <b><span id="creditAmountDisplay">0</span> đ</b></span>
+                <div>
+                     <button class="btn-mini btn-success" onclick="applyCreditToOrder()">Dùng</button>
+                     <button class="btn-mini btn-danger" onclick="clearCreditManual()">Xóa</button>
+                </div>
+            </div>
+            
+            <div id="oldDebtToggleBox" style="display:none; background:#f8d7da; color:#721c24; padding:8px; border-radius:4px; margin-bottom:5px; align-items:center; justify-content:space-between;">
+                <span>⚠️ Nợ cũ: <b id="lblOldDebtVal">0</b> đ</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span style="font-size:11px;">Gộp vào đơn</span>
+                    <label class="switch">
+                      <input type="checkbox" id="toggleOldDebt" onchange="renderAll()">
+                      <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <input type="hidden" id="appliedCreditValue" value="0">
+        </div>
+
+
+
+
+        <div class="section-card">
+            <h3 class="section-title">📦 Chọn Sản Phẩm</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Loại thẻ / SP</label>
+                    <select id="inpCategory" onchange="handleCategoryChange()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Chi tiết</label>
+                    <select id="inpCardType" onchange="handleProductChange()"></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mệnh giá</label>
+                    <select id="inpPriceSelect" onchange="calculateSellingPrice()"></select>
+                    <input type="number" id="inpPriceCustom" placeholder="Nhập giá..." style="display:none;" oninput="calculateSellingPrice()">
+                    <span id="sellingPricePreview" class="price-preview">0 đ</span>
+                </div>
+                <div class="form-group" style="flex: 0.5;">
+                    <label>Số lượng</label>
+                    <input type="number" id="inpQty" value="1" min="1" oninput="renderInputFields()">
+                </div>
+            </div>
+
+
+
+
+            <span class="bulk-toggle" onclick="toggleBulk()">📋 Dán nhiều mã (Excel/Text)</span>
+            <div class="bulk-import-box" id="bulkBox">
+                <textarea id="bulkArea" style="width:100%; height:60px; font-size:11px;" placeholder="Mã thẻ [tab] Seri"></textarea>
+                <button type="button" class="btn-mini btn-warning" style="margin-top:5px; width:100%;" onclick="processBulkData()">Điền tự động</button>
+            </div>
+
+
+
+
+            <div id="dynamicInputs"></div>
+            
+            <button class="btn btn-primary" onclick="addToCart()" style="margin-top:10px;">⬇ THÊM VÀO ĐƠN (Enter)</button>
+        </div>
+
+
+
+
+        <div class="section-card">
+            <div class="section-header" style="margin-bottom:5px; border-bottom:none;">
+                <h3 class="section-title">🛒 Danh Sách Chờ In <span id="itemCountBadge" style="background:#007bff; color:white; padding:2px 6px; border-radius:10px; font-size:11px; margin-left:5px;">0</span></h3>
+                <button class="btn-mini btn-danger" onclick="resetCart()">🗑 Xóa hết</button>
+            </div>
+            <div class="cart-list-container" id="cartListUI"></div>
+        </div>
+
+
+
+
+        <div class="section-card">
+            <h3 class="section-title">💰 Thanh Toán & In</h3>
+            
+            <div class="form-group" style="margin-bottom:10px;">
+                <label>Khổ giấy in hóa đơn</label>
+                <select id="selPrintSize" onchange="updatePrintSize()">
+                    <option value="k80">In Khổ K80 (80mm) - Mặc định</option>
+                    <option value="k57">In Khổ K57 (57mm) - Nhỏ</option>
+                </select>
+            </div>
+
+
+
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phụ thu / Ship</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="inpSurchargeLabel" value="Phụ thu" placeholder="Tên phí..." style="flex:1;" oninput="renderAll()">
+                        <input type="number" id="inpSurcharge" placeholder="Số tiền..." style="flex:1.5;" oninput="renderAll()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Giảm giá (VNĐ)</label>
+                    <input type="number" id="inpDiscount" placeholder="Nhập số tiền..." oninput="renderAll()">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Khách trả trước (Nếu nợ/trả thiếu)</label>
+                    <input type="number" id="inpPrepaid" placeholder="Để trống nếu trả đủ..." oninput="renderAll()">
+                </div>
+            </div>
+
+
+
+
+            <div class="form-group">
+                <label>Ghi chú công khai</label>
+                <textarea id="inpPublicNote" rows="1" placeholder="In lên hóa đơn..." oninput="updateInvoiceHeader()"></textarea>
+            </div>
+
+
+
+
+            <div class="payment-options">
+                <button class="pay-btn active" onclick="setPayment('CASH')" id="btnPayCASH">💵 Tiền mặt</button>
+                <button class="pay-btn" onclick="setPayment('TRANSFER')" id="btnPayTRANSFER">🏦 Chuyển khoản</button>
+                <button class="pay-btn debt-mode" onclick="setPayment('DEBT')" id="btnPayDEBT">📒 Ghi Nợ</button>
+            </div>
+            <div class="payment-options">
+                 <button class="pay-btn status-btn active-unpaid" onclick="setPaymentStatus(false)" id="btnStatusUnpaid">Chưa TT</button>
+                 <button class="pay-btn status-btn" onclick="setPaymentStatus(true)" id="btnStatusPaid">Đã TT</button>
+            </div>
+            
+            <div id="groupStandardBtns">
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <button class="btn btn-secondary" onclick="printProvisional()">📄 In Tạm</button>
+                    <button class="btn btn-secondary" style="background:#607d8b" onclick="shareProvisionalImage()">📤 Gửi Ảnh Tạm</button>
+                </div>
+                <button class="btn btn-confirm" onclick="confirmOrder()" style="margin-bottom:10px; font-size:15px;">✅ LƯU & TẠO ĐƠN</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-success" onclick="printOfficial()">🖨 IN HÓA ĐƠN</button>
+                    <button class="btn btn-info" onclick="downloadInvoiceImage()">⬇ TẢI ẢNH</button>
+                </div>
+            </div>
+
+
+
+
+            <div id="groupEditBtns" style="display:none;">
+                <button class="btn btn-warning" onclick="saveEditedOrder()" style="margin-bottom:10px; font-weight:bold; color:#333;">💾 LƯU CẬP NHẬT</button>
+                <div style="display:flex; gap:10px; margin-bottom: 10px;">
+                    <button class="btn btn-info" onclick="downloadInvoiceImage()">⬇ Tải Ảnh</button>
+                    <button class="btn btn-primary" onclick="shareInvoiceImage()">📤 Chia sẻ</button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="cancelEditMode()">❌ Hủy bỏ</button>
+                    <button class="btn btn-success" onclick="printOfficial()">🖨 IN LẠI</button>
+                </div>
+            </div>
+
+
+
+
+            <div id="groupDebtBtns" style="display:none;">
+                <button class="btn btn-info" onclick="shareInvoiceImage()" style="margin-bottom:10px;">📤 GỬI ẢNH BÁO NỢ</button>
+                <button class="btn btn-secondary" onclick="cancelEditMode()">❌ Thoát xem</button>
+            </div>
+            
+            <textarea id="inpInternalNote" rows="1" style="margin-top:10px; background:#f3f0ff; border:1px solid #d1c4e9; font-size:11px;" placeholder="Ghi chú nội bộ (không in)..."></textarea>
+        </div>
+        
+        <div class="revenue-card">
+            <h3>Doanh thu hôm nay (Real-time)</h3>
+            <span class="money" id="dailyTotalDisplay">0 đ</span>
+            <div style="font-size:11px; margin-top:5px; opacity:0.9; display:flex; justify-content:center; gap:10px;">
+                <span>TM: <b id="revCash">0</b></span>
+                <span>CK: <b id="revTransfer">0</b></span>
+                <span>Nợ: <b id="revDebt" style="color:#ffcccc">0</b></span>
+            </div>
+        </div>
+
+
+
+
+    </div> <div class="invoice-box" id="invoiceArea">
+        <div class="inv-header" id="invHeaderBg">
+            <h3 class="inv-brand" id="outBrandName">THE BÁO</h3>
+            <p class="inv-slogan" id="outSlogan">Dịch vụ nạp game & Thẻ cào trực tuyến</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px;" id="outHotline">☎ Hotline/Zalo: 0354.830.400</p>
+            <div class="id-qr-box" id="trackingQrCode"></div>
+        </div>
+
+
+
+
+        <div class="inv-body">
+            <div class="inv-title-section">
+                <span class="inv-title" id="lblInvoiceTitle">HÓA ĐƠN BÁN HÀNG</span>
+                <div class="inv-meta">
+                    <span id="outInvoiceID" style="font-weight:bold; margin-right:10px;">TB...</span>
+                    <span id="outDate">...</span>
+                </div>
+            </div>
+
+
+
+
+            <div class="inv-customer-info">
+                <div class="info-row">
+                    <span>Khách hàng:</span>
+                    <span id="outName" class="text-bold">Khách lẻ</span>
+                </div>
+                <div class="info-row" id="rowPhone" style="display:none;">
+                    <span>SĐT:</span>
+                    <span id="outPhone">...</span>
+                </div>
+                <div style="border-top:1px dashed #ccc; margin:5px 0;"></div>
+                <div class="info-row" style="font-size:12px;">
+                    <span style="color:#666;">Thanh toán:</span>
+                    <span id="outPaymentMethod" style="font-weight:bold;">Tiền mặt</span>
+                </div>
+                <div class="info-row" style="font-size:12px;">
+                    <span style="color:#666;">Trạng thái:</span>
+                    <span id="outPaymentStatusHTML">...</span>
+                </div>
+            </div>
+
+
+
+
+            <table class="bill-table">
+                <thead>
+                    <tr>
+                        <th style="width: 55%;">Sản phẩm</th>
+                        <th style="width: 15%; text-align:center;">SL</th>
+                        <th style="width: 30%; text-align:right;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody id="invoiceTableBody"></tbody>
+            </table>
+
+
+
+
+            <div class="total-section">
+                <div class="total-row" style="font-size:13px;">
+                    <span>Tạm tính:</span>
+                    <span id="outSubTotal" style="font-weight:bold;">0 đ</span>
+                </div>
+                
+                <div class="total-row" id="rowSurcharge" style="font-size:13px; color:#d35400; display:none;">
+                    <span id="outSurchargeLabel">Phụ thu:</span>
+                    <span id="outSurchargeVal">+0 đ</span>
+                </div>
+
+
+
+
+                <div class="total-row" id="rowDiscount" style="font-size:13px; color:#e74c3c; display:none;">
+                    <span>Giảm giá:</span>
+                    <span id="outDiscountVal">-0 đ</span>
+                </div>
+                
+                <div class="total-row" id="rowCreditUsed" style="font-size:13px; color:#e67e22; display:none;">
+                    <span>Trừ tiền thừa:</span>
+                    <span id="outCreditUsedVal">-0 đ</span>
+                </div>
+                
+                <div class="total-row" id="rowOldDebtAdded" style="font-size:13px; color:#c0392b; display:none; border-top:1px dashed #ccc; padding-top:3px;">
+                    <span>Nợ cũ (Cộng dồn):</span>
+                    <span id="outOldDebtAddedVal">+0 đ</span>
+                </div>
+                
+                <div class="total-row" id="rowPaidAmount" style="font-size:13px; color:#27ae60; display:none;">
+                    <span>Đã thanh toán:</span>
+                    <span id="outPaidAmount">0 đ</span>
+                </div>
+
+
+
+
+                 <div class="total-row" id="rowPrepaid" style="font-size:13px; color:#2980b9; display:none;">
+                    <span>Khách trả trước:</span>
+                    <span id="outPrepaidVal">0 đ</span>
+                </div>
+
+
+
+
+                <div style="border-bottom: 1px solid #ddd; margin: 5px 0;"></div>
+                <div class="total-row">
+                    <span style="font-weight:bold; font-size:15px; color:#333;" id="lblTotalLabel">TỔNG CỘNG:</span>
+                    <span id="outFinalTotal" class="final-price">0 đ</span>
+                </div>
+            </div>
+            
+            <div id="outPublicNoteBox" class="public-note-box">
+                <strong style="display:block; margin-bottom:3px; color:#333;">📌 Ghi chú:</strong>
+                <span id="outPublicNoteContent" style="font-style: italic; color:#555;"></span>
+            </div>
+
+
+
+
+            <div class="qr-section" id="qrSection">
+                <p class="qr-note" style="font-weight:bold; margin-bottom:5px; color:#004e92;">QUÉT MÃ ĐỂ THANH TOÁN</p>
+                <img id="qrImage" src="" alt="QR Code">
+                <p class="qr-note" id="qrBankName" style="font-weight:bold; margin-top:5px;">Ngân hàng MB</p>
+                <p class="qr-note" id="qrAccNum">STK: ...</p>
+            </div>
+
+
+
+
+            <div class="barcode-section">
+                <svg id="trackingBarcode"></svg>
+            </div>
+
+
+
+
+            <div class="inv-footer">
+                Cảm ơn bạn đã tin tưởng và ủng hộ!<br>
+                Mọi thắc mắc vui lòng liên hệ <b id="outHotlineFooter">...</b>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="debtModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header debt-type">
+                <h3 style="margin:0;">📖 QUẢN LÝ CÔNG NỢ</h3>
+                <button onclick="closeModal('debtModal')" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="flex:1; background:#fff; padding:10px; border-radius:5px; border:1px solid #ddd; text-align:center;">
+                        <span style="display:block; font-size:12px; color:#777;">TỔNG PHẢI THU</span>
+                        <strong style="font-size:18px; color:#c0392b;" id="lblGlobalDebt">0 đ</strong>
+                    </div>
+                    <div style="flex:1; background:#fff; padding:10px; border-radius:5px; border:1px solid #ddd; text-align:center;">
+                        <span style="display:block; font-size:12px; color:#777;">TIỀN THỪA KHÁCH</span>
+                        <strong style="font-size:18px; color:#e67e22;" id="lblGlobalCredit">0 đ</strong>
+                    </div>
+                </div>
+
+
+
+
+                <div class="tab-nav">
+                    <div class="tab-item active" id="tabDebtActive" onclick="switchDebtTab('active')">⚡ Đang nợ</div>
+                    <div class="tab-item" id="tabDebtHistory" onclick="switchDebtTab('history')">🕒 Lịch sử / Đã trả</div>
+                </div>
+
+
+
+
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input type="text" id="inpSearchDebt" placeholder="🔍 Tìm tên, SĐT..." oninput="renderDebtList()" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    <button class="btn btn-success" onclick="exportDebtToExcel()" style="width:auto;">Excel</button>
+                </div>
+                
+                <div id="debtListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header history-type">
+                <h3 style="margin:0;">🕒 LỊCH SỬ ĐƠN HÀNG</h3>
+                <button onclick="closeModal('historyModal')" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#fff; padding:10px; border-radius:5px; border:1px solid #ddd; margin-bottom:15px;">
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="date" id="histFilterStart" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <input type="date" id="histFilterEnd" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <button class="btn btn-primary" onclick="loadHistory(false)" style="width:auto;">Lọc</button>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="inpSearchHistory" placeholder="🔍 Tìm đơn hàng..." oninput="loadHistory(false)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        <button class="btn btn-success" onclick="exportHistoryToExcel()" style="width:auto;">Xuất Excel</button>
+                    </div>
+                </div>
+
+
+
+
+                <div class="history-list" id="historyListUI" style="max-height: 400px; overflow-y: auto;"></div>
+                <div id="histLoadMoreBtn" style="text-align:center; margin-top:10px; display:none;">
+                    <button class="btn btn-secondary" onclick="loadHistory(true)">⬇ Xem tất cả</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="historyDetailModal" class="modal-overlay">
+        <div class="modal-box" style="width: auto; max-width: none; background: transparent; box-shadow: none; padding: 0; overflow: visible;">
+            <div class="no-print" style="text-align: center; margin-bottom: 10px; display: flex; gap: 5px; justify-content: center; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px;">
+                <button class="btn-mini btn-success" onclick="printHistoryDetail()">🖨 In</button>
+                <button class="btn-mini btn-info" onclick="downloadHistoryDetail()">⬇ Tải ảnh</button>
+                <button class="btn-mini btn-primary" onclick="shareHistoryDetail()">📤 Chia sẻ</button>
+                <button class="btn-mini btn-secondary" onclick="closeModal('historyDetailModal')">✖ Đóng</button>
+            </div>
+           <div class="invoice-box" id="historyInvoiceArea" style="margin: 0 auto; max-height: 85vh; overflow-y: auto;">
+                <div class="inv-header" id="hist_invHeaderBg">
+                    <h3 class="inv-brand" id="hist_outBrandName">THE BÁO</h3>
+                    <p class="inv-slogan" id="hist_outSlogan">...</p>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;" id="hist_outHotline">...</p>
+                    <div class="id-qr-box" id="hist_trackingQrCode"></div>
+                </div>
+
+
+
+
+                <div class="inv-body">
+                    <div class="inv-title-section">
+                        <span class="inv-title" id="hist_lblInvoiceTitle">HÓA ĐƠN LỊCH SỬ</span>
+                        <div class="inv-meta">
+                            <span id="hist_outInvoiceID" style="font-weight:bold; margin-right:10px;">...</span>
+                            <span id="hist_outDate">...</span>
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="inv-customer-info">
+                        <div class="info-row"><span>Khách hàng:</span><span id="hist_outName" class="text-bold">...</span></div>
+                        <div class="info-row" id="hist_rowPhone"><span>SĐT:</span><span id="hist_outPhone">...</span></div>
+                        <div style="border-top:1px dashed #ccc; margin:5px 0;"></div>
+                        <div class="info-row" style="font-size:12px;"><span style="color:#666;">Thanh toán:</span><span id="hist_outPaymentMethod" style="font-weight:bold;">...</span></div>
+                        <div class="info-row" style="font-size:12px;"><span style="color:#666;">Trạng thái:</span><span id="hist_outPaymentStatusHTML">...</span></div>
+                    </div>
+
+
+
+
+                    <table class="bill-table">
+                        <thead><tr><th style="width: 55%;">Sản phẩm</th><th style="width: 15%; text-align:center;">SL</th><th style="width: 30%; text-align:right;">Thành tiền</th></tr></thead>
+                        <tbody id="hist_invoiceTableBody"></tbody>
+                    </table>
+
+
+
+
+                    <div class="total-section">
+                        <div class="total-row"><span>Tạm tính:</span><span id="hist_outSubTotal" style="font-weight:bold;">0 đ</span></div>
+                        <div class="total-row" id="hist_rowSurcharge" style="display:none; color:#d35400;"><span>Phụ thu:</span><span id="hist_outSurchargeVal">0 đ</span></div>
+                        <div class="total-row" id="hist_rowDiscount" style="display:none; color:#e74c3c;"><span>Giảm giá:</span><span id="hist_outDiscountVal">0 đ</span></div>
+                        <div class="total-row">
+                            <span style="font-weight:bold; font-size:15px; color:#333;">TỔNG CỘNG:</span>
+                            <span id="hist_outFinalTotal" class="final-price">0 đ</span>
+                        </div>
+                    </div>
+                    
+                    <div id="hist_outPublicNoteBox" class="public-note-box">
+                        <strong style="display:block; margin-bottom:3px; color:#333;">📌 Ghi chú:</strong>
+                        <span id="hist_outPublicNoteContent" style="font-style: italic; color:#555;"></span>
+                    </div>
+
+
+
+
+                    <div class="qr-section" id="hist_qrSection">
+                        <p class="qr-note" style="font-weight:bold; margin-bottom:5px; color:#004e92;">QUÉT MÃ ĐỂ THANH TOÁN</p>
+                        <img id="hist_qrImage" src="" alt="QR Code">
+                        <p class="qr-note" id="hist_qrBankName" style="font-weight:bold; margin-top:5px;">...</p>
+                        <p class="qr-note" id="hist_qrAccNum">STK: ...</p>
+                    </div>
+
+
+
+
+                    <div class="barcode-section"><svg id="hist_trackingBarcode"></svg></div>
+                    <div class="inv-footer">Cảm ơn bạn đã tin tưởng và ủng hộ!<br>Mọi thắc mắc vui lòng liên hệ <b id="hist_outHotlineFooter">...</b></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header settings-type">
+                <h3 style="margin:0;">⚙️ CẤU HÌNH & DỮ LIỆU</h3>
+                <button onclick="closeModal('settingsModal')" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-nav">
+                    <div class="tab-item active" onclick="switchSettingTab('shop', this)">🏪 Cửa hàng</div>
+                    <div class="tab-item" onclick="switchSettingTab('product', this)">📦 Sản phẩm</div>
+                    <div class="tab-item" onclick="switchSettingTab('inventory', this)" style="color:#d35400;">🔑 Kho thẻ (Auto)</div>
+                    <div class="tab-item" onclick="switchSettingTab('customer', this)">👥 Khách hàng</div>
+                    <div class="tab-item" onclick="switchSettingTab('data', this)">💾 Dữ liệu</div>
+                </div>
+
+
+
+
+                <div id="setTab_shop" class="tab-content active">
+                    <div class="form-group"><label>Tên Shop:</label><input type="text" id="cfgBrandName"></div>
+                    <div class="form-group"><label>Slogan / Địa chỉ:</label><input type="text" id="cfgSlogan"></div>
+                    <div class="form-group"><label>Hotline:</label><input type="text" id="cfgHotline"></div>
+                    <div class="form-row" style="margin-top:10px;">
+                        <div class="form-group"><label>Ngân hàng:</label><select id="cfgBankId"><option value="MB">MB Bank</option><option value="VCB">Vietcombank</option><option value="TCB">Techcombank</option><option value="MOMO">Momo</option><option value="VPB">VPBank</option><option value="ACB">ACB</option><option value="ICB">VietinBank</option><option value="BIDV">BIDV</option><option value="TPB">TPBank</option></select></div>
+                        <div class="form-group"><label>Số tài khoản:</label><input type="text" id="cfgAccNum"></div>
+                    </div>
+                    <div class="form-group"><label>Chủ tài khoản:</label><input type="text" id="cfgAccName"></div>
+                    <button class="btn btn-confirm" onclick="saveGlobalSettings()" style="margin-top:15px;">LƯU CẤU HÌNH</button>
+                </div>
+
+
+
+
+                <div id="setTab_product" class="tab-content">
+                    <div class="catalog-container">
+                        <div class="catalog-col" style="flex:0.8;">
+                            <div class="cat-header">DANH MỤC <button class="btn-mini btn-success" style="float:right;" onclick="addCategory()">+</button></div>
+                            <div class="cat-list" id="catList_categories"></div>
+                        </div>
+                        <div class="catalog-col" style="flex:1;">
+                            <div class="cat-header">SẢN PHẨM <button class="btn-mini btn-success" style="float:right;" onclick="addProduct()">+</button></div>
+                            <div class="cat-list" id="catList_products"></div>
+                        </div>
+                        <div class="catalog-col" style="flex:1.8;">
+                            <div class="cat-header">MỆNH GIÁ <button class="btn-mini btn-success" style="float:right;" onclick="addPrice()">+</button></div>
+                            <div class="cat-list" id="catList_prices"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-confirm" style="margin-top:15px;" onclick="saveCatalogSettings()">LƯU DANH SÁCH</button>
+                </div>
+
+
+
+
+                <div id="setTab_inventory" class="tab-content">
+                    <div style="background: #fff8e1; border: 1px dashed #f39c12; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <h4 style="margin:0 0 5px 0; color:#d35400;">📥 NẠP THẺ VÀO KHO</h4>
+                        <div class="form-row">
+                            <div class="form-group"><label>Chọn SP:</label><select id="invProdSelect" onchange="updateInvPriceSelect()"></select></div>
+                            <div class="form-group"><label>Mệnh giá:</label><select id="invPriceSelect"></select></div>
+                        </div>
+                        <textarea id="invInputArea" style="width:100%; height:80px; font-size:11px;" placeholder="Dán danh sách mã thẻ vào đây... (Mỗi dòng 1 thẻ)&#10;Định dạng: Mã hoặc Mã[tab]Seri hoặc Mã|Seri"></textarea>
+                        <button class="btn btn-warning" onclick="importToInventory()" style="margin-top:5px; width:auto;">⬇ NẠP VÀO KHO</button>
+                    </div>
+                    
+                    <h4 style="margin:10px 0 5px 0; border-top:1px solid #ddd; padding-top:10px;">📦 KHO HIỆN CÓ</h4>
+                    <div style="max-height: 250px; overflow-y:auto; border:1px solid #ddd;">
+                        <table class="stock-table">
+                            <thead><tr><th>Sản phẩm</th><th>Mệnh giá</th><th>Số lượng</th><th>Thao tác</th></tr></thead>
+                            <tbody id="inventoryTableBody"></tbody>
+                        </table>
+                    </div>
+                    <p style="font-size:11px; color:#666; margin-top:5px;">* Khi tạo đơn, tool sẽ tự động lấy mã từ kho (ưu tiên cũ nhất) và điền vào hóa đơn.</p>
+                </div>
+
+
+
+
+                <div id="setTab_customer" class="tab-content">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <button class="btn btn-info" style="width:auto;" onclick="syncCustomersFromHistory()">🔄 Đồng bộ từ Lịch sử</button>
+                        <span style="font-size:12px; color:#666; align-self:center;">*Click vào khách hàng để xem chi tiết & sửa</span>
+                    </div>
+                    <div class="form-row" style="background:#eee; padding:10px; border-radius:5px;">
+                        <input type="text" id="newCusName" placeholder="Tên" style="flex:1;">
+                        <input type="text" id="newCusPhone" placeholder="SĐT" style="flex:1;">
+                        <button class="btn btn-success" style="width:auto;" onclick="addNewCustomer()">Thêm</button>
+                    </div>
+                    <div style="max-height:300px; overflow-y:auto; border:1px solid #ddd; margin-top:10px;">
+                        <table class="customer-table"><tbody id="customerTableBody"></tbody></table>
+                    </div>
+                </div>
+
+
+
+
+                <div id="setTab_data" class="tab-content">
+    <div class="data-box-section" style="background:#e3f2fd; border-color:#2196f3;">
+        <div class="data-box-title" style="color:#0d47a1;">☁️ QUẢN LÝ CLOUD (FIREBASE)</div>
+        <p style="font-size:12px; color:#555; margin-top:0;">Dữ liệu tự động đồng bộ khi bạn thao tác. Tuy nhiên, bạn có thể ép buộc đồng bộ hoặc khôi phục từ file backup cũ lên Cloud tại đây.</p>
+        
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div style="display:flex; gap:5px;">
+    <button class="btn btn-primary" onclick="manualSyncToCloud()" style="width:auto;">⬆ Đồng bộ Lên (Máy ➔ Cloud)</button>
+    <button class="btn btn-success" onclick="manualSyncFromCloud()" style="width:auto; background:#00897b; border-color:#00796b;">⬇ Đồng bộ Về (Cloud ➔ Máy)</button>
+</div>
+            <div style="border-left:1px solid #ccc; padding-left:10px; display:flex; gap:5px; align-items:center;">
+                <button class="btn btn-warning" onclick="document.getElementById('fileCloudRestore').click()" style="width:auto;">📂 Nạp file Backup (.jsonl) lên Cloud</button>
+                <input type="file" id="fileCloudRestore" hidden accept=".jsonl" onchange="restoreBackupToCloud(this)">
+            </div>
+        </div>
+        <p id="cloudStatusMsg" style="font-size:11px; color:#004e92; font-style:italic; margin-bottom:0; display:none;">...</p>
+    </div>
+    <div class="data-box-section">
+                        <div class="data-box-title">📦 Sao lưu / Khôi phục Toàn bộ (JSONL Large Data)</div>
+                        <p style="font-size:12px; color:#666; margin-top:0;">
+                            Hỗ trợ file lớn lên tới 1GB. Dữ liệu được xử lý từng dòng để tránh treo máy.<br>
+                            <b>Lưu ý:</b> Quá trình khôi phục có thể mất thời gian tùy thuộc vào dung lượng file.
+                        </p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <input type="date" id="backupStart" style="padding:5px;" title="Từ ngày">
+                            <input type="date" id="backupEnd" style="padding:5px;" title="Đến ngày">
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn btn-primary" onclick="backupDataJSONL()">⬇ Tải Backup (JSONL)</button>
+                            <button class="btn btn-warning" onclick="triggerRestoreJSONL('merge')">⬆ Khôi phục (JSONL)</button>
+                            <input type="file" id="fileRestoreJSONL" style="display:none" onchange="restoreDataJSONL(this)" accept=".jsonl, .txt">
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="data-box-section" style="background:#f0f8ff; border-color:#b3d7ff;">
+                        <div class="data-box-title" style="color:#004e92;">🧩 Sao lưu từng phần (Nhỏ)</div>
+                        
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #dae0e5; padding-bottom:5px;">
+                            <span style="font-size:13px;">🏪 Cấu hình Shop</span>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-mini btn-info" onclick="exportShopConfig()">⬇ Lưu</button>
+                                <button class="btn-mini btn-secondary" onclick="document.getElementById('fileImpConfig').click()">⬆ Nạp</button>
+                                <input type="file" id="fileImpConfig" hidden onchange="importShopConfig(this)" accept=".json">
+                            </div>
+                        </div>
+
+
+
+
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #dae0e5; padding-bottom:5px;">
+                            <span style="font-size:13px;">📦 Danh sách Sản phẩm</span>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-mini btn-info" onclick="exportCatalog()">⬇ Lưu</button>
+                                <button class="btn-mini btn-secondary" onclick="document.getElementById('fileImpCatalog').click()">⬆ Nạp</button>
+                                <input type="file" id="fileImpCatalog" hidden onchange="importCatalog(this)" accept=".json">
+                            </div>
+                        </div>
+
+
+
+
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <span style="font-size:13px;">👥 Danh bạ Khách hàng (Excel)</span>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-mini btn-excel" onclick="exportCustomersExcel()">⬇ Excel</button>
+                                <button class="btn-mini btn-success" onclick="document.getElementById('fileImpCusExcel').click()">⬆ Tải lên</button>
+                                <input type="file" id="fileImpCusExcel" hidden onchange="importCustomersExcel(this)" accept=".xlsx, .xls">
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                    <div class="data-box-section" style="background:#e8f5e9; border-color:#4caf50;">
+                        <div class="data-box-title" style="color:#2e7d32;">📊 Lịch sử Đơn hàng (Excel)</div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-excel" style="width:auto;" onclick="exportHistoryToExcel()">⬇ Xuất Excel</button>
+                            <button class="btn btn-success" style="width:auto; border:1px solid #1b5e20;" onclick="triggerImportExcel()">⬆ Khôi phục từ Excel</button>
+                            <input type="file" id="fileImportExcel" style="display:none" onchange="importFromExcel(this)" accept=".xlsx, .xls">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="customerDetailModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:700px;">
+            <div class="modal-header info-type">
+                <h3 style="margin:0;">👤 HỒ SƠ KHÁCH HÀNG (CRM)</h3>
+                <button onclick="closeModal('customerDetailModal')" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#e7f1ff; padding:15px; border-radius:5px; margin-bottom:15px; border:1px solid #b3d7ff;">
+                    <div style="display:flex; gap:15px;">
+                        <div style="flex:1;">
+                            <div class="form-group">
+                                <label style="color:#004e92;">Tên Khách Hàng:</label>
+                                <input type="text" id="crmNameInput" style="font-weight:bold; color:#004e92;">
+                            </div>
+                            <div class="form-group" style="margin-top:5px;">
+                                <label style="color:#004e92;">Số Điện Thoại (Key):</label>
+                                <input type="text" id="crmPhoneInput" style="font-weight:bold;">
+                            </div>
+                        </div>
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
+                            <div style="background:white; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                                <span style="font-size:12px; color:#666;">Tổng chi tiêu:</span><br>
+                                <b id="crmTotalSpend" style="color:#27ae60; font-size:16px;">0 đ</b>
+                            </div>
+                            <div style="background:white; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                                <span style="font-size:12px; color:#666;">Đang nợ:</span><br>
+                                <b id="crmCurrentDebt" style="color:#c0392b; font-size:16px;">0 đ</b>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; text-align:right;">
+                        <input type="hidden" id="crmOriginalPhone">
+                        <button class="btn btn-warning" style="width:auto;" onclick="saveCRMDetails()">💾 LƯU THÔNG TIN</button>
+                    </div>
+                </div>
+
+
+
+
+                <div style="border-top:2px solid #eee; padding-top:10px;">
+                    <h4 style="margin:0 0 10px 0; color:#555;">📜 Lịch sử mua hàng</h4>
+                    
+                    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap: wrap;">
+                        <input type="date" id="crmFilterStart" style="padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                        <input type="date" id="crmFilterEnd" style="padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                        <input type="text" id="crmSearchInput" placeholder="🔍 Tìm đơn hàng..." style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                        <button class="btn btn-primary" onclick="renderCRMHistory()" style="width:auto; padding:6px 12px;">Lọc</button>
+                        <button class="btn btn-excel" onclick="exportCurrentCustomerHistory()" style="width:auto; padding:6px 12px;">⬇ Xuất Excel LS Mua</button>
+                    </div>
+
+
+
+
+                    <div style="border:1px solid #ddd; border-radius:5px; overflow:hidden; max-height:300px; overflow-y:auto;">
+                        <table class="cus-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã HĐ</th>
+                                    <th>Ngày</th>
+                                    <th>Sản phẩm chính</th>
+                                    <th style="text-align:right;">Tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crmHistoryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="progressModal" class="modal-overlay" style="z-index: 10000;">
+        <div class="modal-box" style="max-width:400px; text-align:center; padding:20px;">
+            <h3 id="progressTitle" style="color:#004e92; margin-top:0;">ĐANG XỬ LÝ...</h3>
+            <p id="progressAction" style="font-size:13px; color:#555;">Vui lòng không tắt trình duyệt.</p>
+            
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar">0%</div>
+            </div>
+            <span id="timeRemaining" class="time-estimate">Đang tính toán thời gian...</span>
+            <button id="btnCloseProgress" class="btn btn-secondary" onclick="closeModal('progressModal')" style="margin-top:15px; display:none;">Đóng</button>
+        </div>
+    </div>
+
+
+
+
+    <script>
+        // --- DATA & CONFIG ---
+        const defaultCatalog = [
+            { id: "cat_game", name: "Thẻ Game", products: [ { name: "Garena", prices: [{face: 20000, sell: 20000}, {face: 50000, sell: 50000}, {face: 100000, sell: 100000}] }, { name: "Zing", prices: [{face: 20000, sell: 20000}, {face: 50000, sell: 50000}, {face: 100000, sell: 100000}] } ] },
+            { id: "cat_mobile", name: "Điện Thoại", products: [ { name: "Viettel", prices: [{face: 10000, sell: 10000}, {face: 20000, sell: 20000}, {face: 50000, sell: 50000}] }, { name: "Vina", prices: [{face: 10000, sell: 10000}, {face: 20000, sell: 20000}] } ] },
+            { id: "cat_service", name: "Dịch vụ", products: [ { name: "Phí GD", prices: [] }, { name: "Phí Ship", prices: [] } ] }
+        ];
+
+
+
+
+        const defaultStoreConfig = { brandName: "THE BÁO", slogan: "Dịch vụ thẻ cào trực tuyến", hotline: "0354.830.400", bankId: "MB", accNum: "0354830400", accName: "NGUYEN VAN A" };
+
+
+
+
+        let productCatalog = [], storeConfig = {}, customerList = [], cartItems = [];
+        let inventory = {}; // NEW: Stock storage
+        let currentPaymentMethod = 'CASH', isPaid = false, isOrderSaved = false, isEditMode = false, isDebtViewMode = false, currentDebtTab = 'active', restoreMode = 'merge';
+        let selectedCatIndex = null, selectedProdIndex = null;
+
+
+
+
+        // --- CORE FUNCTIONS ---
+        function init() {
+            loadStoreConfig(); loadCatalog(); loadCustomerList(); loadInventory();
+            const now = new Date();
+            document.getElementById('inpTime').value = now.toTimeString().substring(0,5);
+            document.getElementById('inpDate').valueAsDate = now;
+            generateRandomInvoiceID(); renderCatalogSelects(); updateInvoiceHeader(); renderInputFields(); calculateTodayRevenue();
+            document.addEventListener('keydown', function(event) { if (event.key === "Enter" && (document.activeElement.tagName === 'INPUT')) addToCart(); });
+            document.addEventListener('click', function(e) { 
+                if (!e.target.closest('.form-group')) document.querySelectorAll('.suggestion-list').forEach(e => e.style.display = 'none'); 
+                if (!e.target.closest('#smartSearchBox')) document.getElementById('smartSearchResults').style.display='none';
+            });
+            
+            // Set default print size
+            updatePrintSize();
+        }
+       // --- NEW: PRINT SIZE HANDLER ---
+        function updatePrintSize() {
+            const size = document.getElementById('selPrintSize').value;
+            const box = document.getElementById('invoiceArea');
+            box.classList.remove('size-k80', 'size-k57');
+            box.classList.add('size-' + size);
+        }
+
+
+
+
+        // --- HELPERS ---
+        const formatMoney = (val) => { if (!val) return "0"; if (!isNaN(val) && !isNaN(parseFloat(val))) return parseInt(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); return val; };
+        const formatReadableCode = (code) => code ? code.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim() : "";
+        
+        // --- SETTINGS UI ---
+        function openSettings() { 
+            document.getElementById('cfgBrandName').value = storeConfig.brandName; 
+            document.getElementById('cfgSlogan').value = storeConfig.slogan; 
+            document.getElementById('cfgHotline').value = storeConfig.hotline; 
+            document.getElementById('cfgBankId').value = storeConfig.bankId; 
+            document.getElementById('cfgAccNum').value = storeConfig.accNum; 
+            document.getElementById('cfgAccName').value = storeConfig.accName; 
+            selectedCatIndex = null; selectedProdIndex = null; 
+            renderCatalogSettings(); renderCustomerTable(); renderInventoryTab();
+            document.getElementById('settingsModal').style.display = 'flex'; 
+        }
+        function switchSettingTab(tab, btn) {
+            document.querySelectorAll('#settingsModal .tab-item').forEach(t => t.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            document.querySelectorAll('#settingsModal .tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`setTab_${tab}`).classList.add('active');
+        }
+        function loadStoreConfig() { storeConfig = JSON.parse(localStorage.getItem('thebao_store_config') || JSON.stringify(defaultStoreConfig)); }
+        function saveGlobalSettings() {
+            storeConfig.brandName = document.getElementById('cfgBrandName').value;
+            storeConfig.slogan = document.getElementById('cfgSlogan').value;
+            storeConfig.hotline = document.getElementById('cfgHotline').value;
+            storeConfig.bankId = document.getElementById('cfgBankId').value;
+            storeConfig.accNum = document.getElementById('cfgAccNum').value;
+            storeConfig.accName = document.getElementById('cfgAccName').value;
+            localStorage.setItem('thebao_store_config', JSON.stringify(storeConfig));
+            updateInvoiceHeader(); alert("✅ Đã lưu cấu hình!");
+        }
+
+
+
+
+        // --- CATALOG LOGIC ---
+        function loadCatalog() { productCatalog = JSON.parse(localStorage.getItem('thebao_catalog_v6') || JSON.stringify(defaultCatalog)); }
+        function saveCatalogSettings() { localStorage.setItem('thebao_catalog_v6', JSON.stringify(productCatalog)); renderCatalogSelects(); alert("✅ Đã lưu sản phẩm!"); }
+        
+        function renderCatalogSettings() {
+            const catList = document.getElementById('catList_categories');
+            catList.innerHTML = productCatalog.map((c, i) => `<div class="cat-item ${selectedCatIndex===i?'active':''}" onclick="selectCategory(${i})"><span>${c.name}</span> <button class="btn-mini btn-danger" onclick="deleteCategory(event, ${i})">x</button></div>`).join('');
+            
+            const prodList = document.getElementById('catList_products');
+            if(selectedCatIndex!==null) prodList.innerHTML = productCatalog[selectedCatIndex].products.map((p,i) => `<div class="cat-item ${selectedProdIndex===i?'active':''}" onclick="selectProduct(${i})"><span>${p.name}</span> <button class="btn-mini btn-danger" onclick="deleteProduct(event, ${i})">x</button></div>`).join('');
+            else prodList.innerHTML = '<div style="text-align:center;color:#999;">Chọn danh mục</div>';
+            
+            const priceList = document.getElementById('catList_prices');
+            if(selectedCatIndex!==null && selectedProdIndex!==null) {
+                priceList.innerHTML = productCatalog[selectedCatIndex].products[selectedProdIndex].prices.map((p,i) => 
+                    `<div class="price-input-group"><label>Face:</label><input type="text" value="${p.face}" onchange="updatePriceVal(${i},'face',this.value)"> <label>Bán:</label><input type="number" value="${p.sell}" onchange="updatePriceVal(${i},'sell',this.value)"> <label>Phí:</label><input type="number" value="${p.surcharge||0}" onchange="updatePriceVal(${i},'surcharge',this.value)"> <button class="btn-mini btn-danger" onclick="deletePrice(${i})">x</button></div>`
+                ).join('');
+            } else priceList.innerHTML = '<div style="text-align:center;color:#999;">Chọn sản phẩm</div>';
+        }
+        function selectCategory(i) { selectedCatIndex=i; selectedProdIndex=null; renderCatalogSettings(); }
+        function selectProduct(i) { selectedProdIndex=i; renderCatalogSettings(); }
+        function addCategory() { const n = prompt("Tên danh mục:"); if(n) { productCatalog.push({id:Date.now(), name:n, products:[]}); renderCatalogSettings(); } }
+        function deleteCategory(e, i) { e.stopPropagation(); if(confirm("Xóa?")) { productCatalog.splice(i,1); selectedCatIndex=null; renderCatalogSettings(); } }
+        function addProduct() { if(selectedCatIndex===null) return; const n = prompt("Tên sản phẩm:"); if(n) { productCatalog[selectedCatIndex].products.push({name:n, products:[]}); renderCatalogSettings(); } }
+        function deleteProduct(e, i) { e.stopPropagation(); if(confirm("Xóa?")) { productCatalog[selectedCatIndex].products.splice(i,1); selectedProdIndex=null; renderCatalogSettings(); } }
+        function addPrice() { if(selectedProdIndex===null) return; productCatalog[selectedCatIndex].products[selectedProdIndex].prices.push({face:10000, sell:10000}); renderCatalogSettings(); }
+        function deletePrice(i) { productCatalog[selectedCatIndex].products[selectedProdIndex].prices.splice(i,1); renderCatalogSettings(); }
+        function updatePriceVal(idx, f, v) { 
+            let final = v; if(f!=='face') final = parseInt(v)||0; 
+            productCatalog[selectedCatIndex].products[selectedProdIndex].prices[idx][f] = final; 
+        }
+
+
+
+
+        // --- CATALOG SELECTION UI ---
+        function renderCatalogSelects() { document.getElementById('inpCategory').innerHTML = productCatalog.map((c,i)=>`<option value="${i}">${c.name}</option>`).join(''); handleCategoryChange(); }
+        function handleCategoryChange() {
+            const idx = document.getElementById('inpCategory').value;
+            if(!productCatalog[idx]) return;
+            document.getElementById('inpCardType').innerHTML = productCatalog[idx].products.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');
+            handleProductChange();
+        }
+        function handleProductChange() {
+            const cIdx = document.getElementById('inpCategory').value;
+            const pIdx = document.getElementById('inpCardType').value;
+            if(!productCatalog[cIdx] || !productCatalog[cIdx].products[pIdx]) return;
+            const prices = productCatalog[cIdx].products[pIdx].prices;
+            const sel = document.getElementById('inpPriceSelect');
+            const cust = document.getElementById('inpPriceCustom');
+            if(prices.length === 0) { sel.style.display="none"; cust.style.display="block"; cust.value=""; }
+            else { sel.style.display="block"; cust.style.display="none"; sel.innerHTML = prices.map((p,i)=>`<option value="${i}">${formatMoney(p.face)} (Bán: ${formatMoney(p.sell)})</option>`).join(''); }
+            calculateSellingPrice();
+        }
+        function calculateSellingPrice() {
+            const cIdx = document.getElementById('inpCategory').value;
+            const pIdx = document.getElementById('inpCardType').value;
+            const prIdx = document.getElementById('inpPriceSelect').value;
+            const prod = productCatalog[cIdx]?.products[pIdx];
+            let face="", sell=0, name=prod?prod.name:"Custom", sur=0;
+            if(prod && prod.prices.length > 0) { const p=prod.prices[prIdx]; face=p.face; sur=p.surcharge||0; sell=p.sell+sur; }
+            else { face=parseInt(document.getElementById('inpPriceCustom').value)||0; sell=face; }
+            document.getElementById('sellingPricePreview').innerText = formatMoney(sell) + " đ";
+            return { faceValue: face, sellingPrice: sell, productName: name };
+        }
+
+
+
+
+        // --- SMART SEARCH (FEATURE 2) ---
+        function handleSmartSearch(e) {
+            const val = e.target.value.toLowerCase().trim();
+            const results = document.getElementById('smartSearchResults');
+            if(val.length < 2) { results.style.display='none'; return; }
+
+
+
+
+            const matches = [];
+            // Parse: "Garena 20" -> kw="garena", num="20"
+            const numMatch = val.match(/\d+/);
+            const num = numMatch ? numMatch[0] : "";
+            const kw = val.replace(/\d+/, "").trim();
+
+
+
+
+            productCatalog.forEach((cat, cIdx) => {
+                cat.products.forEach((prod, pIdx) => {
+                    // Check matches
+                    if(prod.name.toLowerCase().includes(kw)) {
+                        if(num) {
+                            // If user typed number, filter prices
+                            prod.prices.forEach((pr, prIdx) => {
+                                if(pr.face.toString().includes(num) || (pr.face/1000).toString() === num) {
+                                    matches.push({c:cIdx, p:pIdx, pr:prIdx, name: prod.name, face: pr.face, sell: pr.sell});
+                                }
+                            });
+                        } else {
+                            // If no number, show all prices of matching product
+                            prod.prices.forEach((pr, prIdx) => {
+                                matches.push({c:cIdx, p:pIdx, pr:prIdx, name: prod.name, face: pr.face, sell: pr.sell});
+                            });
+                        }
+                    }
+                });
+            });
+
+
+
+
+            if(matches.length > 0) {
+                results.innerHTML = matches.slice(0, 8).map(m => `
+                    <div class="smart-item" onclick="selectSmartItem(${m.c}, ${m.p}, ${m.pr})">
+                        <span class="smart-name">${m.name} ${formatMoney(m.face)}</span>
+                        <span class="smart-price">${formatMoney(m.sell)} đ</span>
+                    </div>
+                `).join('');
+                results.style.display='block';
+            } else {
+                results.style.display='none';
+            }
+        }
+
+
+
+
+        function selectSmartItem(cIdx, pIdx, prIdx) {
+            document.getElementById('inpCategory').value = cIdx;
+            handleCategoryChange(); // Trigger cat change
+            document.getElementById('inpCardType').value = pIdx;
+            handleProductChange(); // Trigger prod change
+            document.getElementById('inpPriceSelect').value = prIdx;
+            calculateSellingPrice(); // Update price
+            
+            document.getElementById('smartSearchResults').style.display='none';
+            document.getElementById('inpSmartSearch').value = "";
+            document.getElementById('inpQty').focus();
+        }
+
+
+
+
+        // --- INVENTORY / AUTO STOCK (FEATURE 3) ---
+        function loadInventory() {
+            inventory = JSON.parse(localStorage.getItem('thebao_inventory') || "{}");
+        }
+        function saveInventory() {
+            localStorage.setItem('thebao_inventory', JSON.stringify(inventory));
+            renderInventoryTab();
+        }
+        function getInventoryKey(prodName, faceValue) {
+            return `${prodName}_${faceValue}`;
+        }
+        
+        function renderInventoryTab() {
+            const list = document.getElementById('inventoryTableBody');
+            const invProd = document.getElementById('invProdSelect');
+            
+            // Render select box for Import
+            let allProds = [];
+            productCatalog.forEach(c => {
+                c.products.forEach(p => {
+                    if(p.prices.length > 0) allProds.push(p);
+                });
+            });
+            
+            // Only update select if empty to avoid reset while typing
+            if(invProd.innerHTML === "") {
+                invProd.innerHTML = allProds.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+            }
+            updateInvPriceSelect();
+
+
+
+
+            // Render Table
+            let rows = "";
+            for (const [key, codes] of Object.entries(inventory)) {
+                if(codes.length > 0) {
+                    const [name, face] = key.split('_');
+                    rows += `<tr>
+                        <td>${name}</td>
+                        <td>${formatMoney(face)}</td>
+                        <td class="stock-count">${codes.length}</td>
+                        <td><button class="btn-mini btn-danger" onclick="clearStock('${key}')">Xóa</button></td>
+                    </tr>`;
+                }
+            }
+            if(rows === "") rows = "<tr><td colspan='4' style='text-align:center;color:#999'>Kho trống</td></tr>";
+            list.innerHTML = rows;
+        }
+
+
+
+
+        function updateInvPriceSelect() {
+            const prodName = document.getElementById('invProdSelect').value;
+            // Find product
+            let found = null;
+            productCatalog.forEach(c => c.products.forEach(p => { if(p.name===prodName) found=p; }));
+            
+            if(found) {
+                document.getElementById('invPriceSelect').innerHTML = found.prices.map(pr => `<option value="${pr.face}">${formatMoney(pr.face)}</option>`).join('');
+            }
+        }
+
+
+
+
+        function importToInventory() {
+            const prodName = document.getElementById('invProdSelect').value;
+            const face = document.getElementById('invPriceSelect').value;
+            const raw = document.getElementById('invInputArea').value.trim();
+            
+            if(!prodName || !face) return alert("Vui lòng chọn sản phẩm!");
+            if(!raw) return alert("Chưa nhập mã thẻ!");
+
+
+
+
+            const key = getInventoryKey(prodName, face);
+            if(!inventory[key]) inventory[key] = [];
+
+
+
+
+            const lines = raw.split(/\n/);
+            let count = 0;
+            lines.forEach(line => {
+                if(line.trim()) {
+                    // Normalize delimiter: tab or pipe to |
+                    let parts = line.split(/[\t|]/);
+                    let code = parts[0].trim();
+                    let seri = parts.length > 1 ? parts[1].trim() : "";
+                    
+                    inventory[key].push({code, serial: seri});
+                    count++;
+                }
+            });
+
+
+
+
+            saveInventory();
+            document.getElementById('invInputArea').value = "";
+            alert(`✅ Đã thêm ${count} thẻ vào kho!`);
+        }
+
+
+
+
+        function clearStock(key) {
+            if(confirm("Xóa toàn bộ mã của loại này?")) {
+                delete inventory[key];
+                saveInventory();
+            }
+        }
+
+
+
+
+        // --- CART & INVOICE ---
+        function toggleBulk() { const b = document.getElementById('bulkBox'); b.style.display = b.style.display==='none'?'block':'none'; }
+        function processBulkData() {
+            const raw = document.getElementById('bulkArea').value;
+            if(!raw.trim()) return alert("Chưa có dữ liệu!");
+            const lines = raw.trim().split(/\n/).filter(l=>l.trim()!=='');
+            document.getElementById('inpQty').value = lines.length;
+            renderInputFields();
+            const codes = document.querySelectorAll('.sub-code');
+            const seris = document.querySelectorAll('.sub-serial');
+            lines.forEach((line, i) => {
+                if(i >= codes.length) return;
+                let parts = line.trim().split(/[\t|]+/);
+                if(parts.length===1) parts = line.trim().split(/\s+/);
+                if(parts.length>=1) codes[i].value = parts[0].trim();
+                if(parts.length>=2) seris[i].value = parts[1].trim();
+            });
+            document.getElementById('bulkArea').value="";
+            document.getElementById('bulkBox').style.display='none';
+        }
+        function renderInputFields() {
+            const qty = parseInt(document.getElementById('inpQty').value)||1;
+            const con = document.getElementById('dynamicInputs');
+            let old = []; document.querySelectorAll('.sub-code').forEach((e,i)=>old.push({c:e.value, s:document.querySelectorAll('.sub-serial')[i]?.value||''}));
+            con.innerHTML="";
+            for(let i=0; i<qty; i++) {
+                let r = document.createElement('div'); r.className='code-entry-row';
+                r.innerHTML = `<span>#${i+1}</span><input type="text" class="sub-code" value="${old[i]?old[i].c:''}" placeholder="Mã thẻ" style="flex:1"><input type="text" class="sub-serial" value="${old[i]?old[i].s:''}" placeholder="Seri" style="flex:1">`;
+                con.appendChild(r);
+            }
+        }
+
+
+
+
+        // MODIFIED: addToCart with Auto-Stock Logic
+        function addToCart() {
+            if(isDebtViewMode) return alert("Thoát chế độ xem nợ trước!");
+            const qty = parseInt(document.getElementById('inpQty').value);
+            const { faceValue, sellingPrice, productName } = calculateSellingPrice();
+            if(qty<1) return;
+            
+            // Get DOM inputs
+            const domCodes = document.querySelectorAll('.sub-code');
+            const domSeris = document.querySelectorAll('.sub-serial');
+            
+            // Check Inventory
+            const stockKey = getInventoryKey(productName, faceValue);
+            let usedStockCount = 0;
+            let list = [];
+
+
+
+
+            for(let i=0; i<qty; i++) {
+                let c = domCodes[i].value.trim();
+                let s = domSeris[i].value.trim();
+
+
+
+
+                // If empty input AND stock exists -> Auto fill
+                if(c === "" && inventory[stockKey] && inventory[stockKey].length > 0) {
+                    let item = inventory[stockKey].shift(); // Remove from stock
+                    c = item.code;
+                    s = item.serial;
+                    usedStockCount++;
+                }
+
+
+
+
+                list.push({code: c, serial: s});
+            }
+
+
+
+
+            // Save inventory if stock was used
+            if(usedStockCount > 0) {
+                saveInventory();
+            }
+
+
+
+
+            cartItems.push({ cardType: productName, faceValue, price: sellingPrice, qty, cardList: list, total: sellingPrice*qty });
+            isOrderSaved = false; renderAll();
+            document.getElementById('inpQty').value=1; renderInputFields();
+        }
+
+
+
+
+        function removeItem(i) { if(isDebtViewMode) return; cartItems.splice(i,1); isOrderSaved=false; renderAll(); }
+        function resetCart() { if(confirm("Làm mới toàn bộ?")) { cancelEditMode(); cartItems=[]; generateRandomInvoiceID(); document.getElementById('inpName').value="Khách lẻ"; document.getElementById('inpPhone').value=""; document.getElementById('inpDiscount').value=""; document.getElementById('inpSurcharge').value=""; document.getElementById('inpPrepaid').value=""; document.getElementById('appliedCreditValue').value=0; renderAll(); } }
+       function renderAll(skipCalc=false) {
+            const listUI = document.getElementById('cartListUI');
+            document.getElementById('itemCountBadge').innerText = cartItems.length;
+            if(cartItems.length===0) listUI.innerHTML = '<p style="color:#999;font-style:italic;text-align:center;padding:10px;">Chưa có sản phẩm.</p>';
+            else {
+                listUI.innerHTML = cartItems.map((item, i) => {
+                    let faceDisplay = formatMoney(item.faceValue);
+                    let label = `${item.cardType}` + (item.faceValue && item.faceValue!=="0" ? (!isNaN(parseFloat(item.faceValue)) ? ` x${faceDisplay}` : ` (${faceDisplay})`) : "");
+                    return `<div class="temp-item"><div><strong>${i+1}. ${label}</strong> (${formatMoney(item.price)}) x${item.qty}</div><button class="btn-mini btn-danger" onclick="removeItem(${i})">X</button></div>`;
+                }).join('');
+            }
+
+
+
+
+            updateInvoiceHeader();
+            let total = cartItems.reduce((s,i)=>s+i.total,0);
+            document.getElementById('invoiceTableBody').innerHTML = cartItems.map(item => {
+                let faceDisplay = formatMoney(item.faceValue);
+                let fullName = `${item.cardType}` + (item.faceValue && item.faceValue!=="0" ? (!isNaN(parseFloat(item.faceValue)) ? ` x${faceDisplay}` : ` (${faceDisplay})`) : "");
+                let details = item.cardList.map(c => {
+                    if(!c.code && !c.serial) return '';
+                    return `<div class="card-box">${c.code?`<span class="card-line"><span class="card-label">MÃ:</span><span class="card-val">${formatReadableCode(c.code)}</span></span>`:''} ${c.serial?`<span class="card-line" style="margin-top:2px;border-top:1px dotted #ccc;padding-top:2px;"><span class="card-label" style="color:#7f8c8d;">SERI:</span><span class="card-seri">${c.serial}</span></span>`:''}</div>`;
+                }).join('');
+                return `<tr><td style="padding-top:10px;"><span class="item-name">${fullName}</span><div class="item-sub">${details}</div></td><td style="text-align:center;padding-top:10px;font-weight:bold;">${item.qty}</td><td style="text-align:right;padding-top:10px;font-weight:bold;">${formatMoney(item.total)}</td></tr>`;
+            }).join('');
+
+
+
+
+            if(!skipCalc) {
+                const disc = parseInt(document.getElementById('inpDiscount').value)||0;
+                const sur = parseInt(document.getElementById('inpSurcharge').value)||0;
+                const surLbl = document.getElementById('inpSurchargeLabel').value||"Phụ thu";
+                const cred = parseInt(document.getElementById('appliedCreditValue').value)||0;
+                const pre = parseInt(document.getElementById('inpPrepaid').value)||0;
+                
+                let oldDebt = 0;
+                if(document.getElementById('toggleOldDebt').checked) oldDebt = parseInt(document.getElementById('oldDebtToggleBox').dataset.amount)||0;
+
+
+
+
+                const final = total + sur - disc - cred + oldDebt;
+                document.getElementById('outSubTotal').innerText = formatMoney(total) + " đ";
+                
+                const rSur = document.getElementById('rowSurcharge'); rSur.style.display = sur>0?'flex':'none';
+                document.getElementById('outSurchargeLabel').innerText = surLbl+":"; document.getElementById('outSurchargeVal').innerText = "+"+formatMoney(sur)+" đ";
+                
+                document.getElementById('rowDiscount').style.display = disc>0?'flex':'none'; document.getElementById('outDiscountVal').innerText = "-"+formatMoney(disc)+" đ";
+                document.getElementById('rowCreditUsed').style.display = cred>0?'flex':'none'; document.getElementById('outCreditUsedVal').innerText = "-"+formatMoney(cred)+" đ";
+                document.getElementById('rowOldDebtAdded').style.display = oldDebt>0?'flex':'none'; document.getElementById('outOldDebtAddedVal').innerText = "+"+formatMoney(oldDebt)+" đ";
+                
+                document.getElementById('outFinalTotal').innerText = formatMoney(final) + " đ";
+                
+                const rPre = document.getElementById('rowPrepaid');
+                if(pre>0 && pre<final) { rPre.style.display="flex"; document.getElementById('outPrepaidVal').innerText = "-"+formatMoney(pre)+" đ"; } 
+                else rPre.style.display="none";
+
+
+
+
+                if(pre>=final && final>0 && !isPaid) setPaymentStatus(true);
+                setPaymentStatus(isPaid);
+            }
+        }
+        
+        function updateInvoiceHeader() {
+            document.getElementById('outBrandName').innerText = storeConfig.brandName;
+            document.getElementById('outSlogan').innerText = storeConfig.slogan;
+            document.getElementById('outHotline').innerText = `☎ Hotline: ${storeConfig.hotline}`;
+            document.getElementById('outHotlineFooter').innerText = storeConfig.hotline;
+            const name = document.getElementById('inpName').value;
+            const phone = document.getElementById('inpPhone').value;
+            const date = document.getElementById('inpDate').value;
+            const dStr = date ? `${date.split('-')[2]}/${date.split('-')[1]}/${date.split('-')[0]}` : "...";
+            let code = document.getElementById('inpInvoiceID').value.toUpperCase();
+            if(!code.startsWith("TB")) code="TB"+code;
+            document.getElementById('outDate').innerText = `${dStr} - ${document.getElementById('inpTime').value}`;
+            document.getElementById('outName').innerText = name || "Khách lẻ";
+            document.getElementById('outInvoiceID').innerText = code;
+            document.getElementById('rowPhone').style.display = phone?"flex":"none";
+            document.getElementById('outPhone').innerText = phone;
+            
+            const pubNote = document.getElementById('inpPublicNote').value;
+            document.getElementById('outPublicNoteBox').style.display = pubNote.trim()?'block':'none';
+            document.getElementById('outPublicNoteContent').innerText = pubNote;
+            
+            checkCreditDisplay(); renderTrackingCodes(code); renderQR();
+        }
+
+
+
+
+        // --- PAYMENT & ACTIONS ---
+        function setPayment(m) { 
+            currentPaymentMethod = m; 
+            document.querySelectorAll('.pay-btn:not(.status-btn)').forEach(b=>b.classList.remove('active'));
+            document.getElementById(`btnPay${m}`).classList.add('active');
+            document.getElementById('outPaymentMethod').innerText = m==='CASH'?'Tiền mặt':(m==='TRANSFER'?'Chuyển khoản':'Ghi nợ');
+            if(m==='DEBT') setPaymentStatus(false);
+            renderQR();
+        }
+        function setPaymentStatus(s) { 
+            isPaid = s;
+            document.getElementById('btnStatusUnpaid').classList.toggle('active-unpaid', !s);
+            document.getElementById('btnStatusPaid').classList.toggle('active-paid', s);
+            const el = document.getElementById('outPaymentStatusHTML');
+            if(s) el.innerHTML = '<span class="paid-stamp">ĐÃ THANH TOÁN</span>';
+            else el.innerHTML = currentPaymentMethod==='DEBT' ? '<span class="debt-stamp">GHI NỢ</span>' : '<span style="color:#e74c3c;font-weight:bold;">Chưa thanh toán</span>';
+            renderQR();
+        }
+        
+        // MODIFIED: Feature 1 (Hide QR if Paid & Cash)
+        function renderQR(amt=null) {
+            const qr = document.getElementById('qrSection');
+            
+            // Check Feature 1 Condition:
+            if(isPaid && currentPaymentMethod === 'CASH') {
+                qr.style.display = 'none';
+                return;
+            }
+
+
+
+
+            let total = parseInt(document.getElementById('outFinalTotal').innerText.replace(/\D/g,''))||0;
+            let pre = parseInt(document.getElementById('inpPrepaid').value)||0;
+            let final = amt!==null ? amt : (total - pre);
+            
+            if(final<=0 || (!isDebtViewMode && (currentPaymentMethod==='CASH' || isPaid) && pre>=total)) { qr.style.display='none'; return; }
+            qr.style.display='block';
+            
+            const content = (isDebtViewMode?"Tra no ":"TT ") + document.getElementById('inpInvoiceID').value;
+            const url = `https://img.vietqr.io/image/${storeConfig.bankId}-${storeConfig.accNum}-compact.png?amount=${final}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(storeConfig.accName)}`;
+            document.getElementById('qrImage').src = url;
+            const sel = document.getElementById('cfgBankId');
+            document.getElementById('qrBankName').innerText = sel.options[sel.selectedIndex].text;
+            document.getElementById('qrAccNum').innerText = `STK: ${storeConfig.accNum}`;
+        }
+
+
+
+
+        // --- DEBT & CUSTOMER LOGIC ---
+        function getDebtList() { return JSON.parse(localStorage.getItem('thebao_debt_list')||"[]"); }
+        function saveDebtList(l) { localStorage.setItem('thebao_debt_list', JSON.stringify(l)); }
+        function checkOldDebt(phone) {
+            const list = getDebtList();
+            const box = document.getElementById('oldDebtToggleBox');
+            if(phone.length<8) { box.style.display='none'; return; }
+            let total = list.filter(d => d.phone===phone && d.remainingAmount>0).reduce((s,d)=>s+d.remainingAmount,0);
+            if(total>0) {
+                box.style.display='flex'; document.getElementById('lblOldDebtVal').innerText = formatMoney(total);
+                box.dataset.amount = total;
+            } else { box.style.display='none'; document.getElementById('toggleOldDebt').checked=false; box.dataset.amount=0; }
+            renderAll();
+        }
+        function addDebtRecord(order, total, paid=0) {
+            let list = getDebtList();
+            if(list.some(d=>d.orderId===order.id)) return;
+            list.unshift({ id:'DEBT_'+Date.now(), orderId:order.id, date:order.date, name:order.name, phone:order.phone, originalAmount:total, paidAmount:paid, remainingAmount:total-paid, items:order.cart });
+            saveDebtList(list);
+        }
+        function payOldDebtFully(phone) {
+            let list = getDebtList(), changed=false;
+            list.forEach(d => { if(d.phone===phone && d.remainingAmount>0) { d.paidAmount+=d.remainingAmount; d.remainingAmount=0; changed=true; updateHistoryPaidStatus(d.orderId); } });
+            if(changed) saveDebtList(list);
+        }
+        function updateHistoryPaidStatus(id) {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]");
+            let item = h.find(x=>x.id===id); if(item) { item.isPaid=true; localStorage.setItem('invoiceHistory', JSON.stringify(h)); }
+        }
+
+
+
+
+        // --- ORDER ACTIONS ---
+        function confirmOrder() {
+            if(isDebtViewMode) return;
+            if(cartItems.length===0) return alert("Giỏ hàng trống!");
+            if(isOrderSaved) return alert("Đơn đã lưu!");
+            
+            let total = parseInt(document.getElementById('outFinalTotal').innerText.replace(/\D/g,''))||0;
+            let pre = parseInt(document.getElementById('inpPrepaid').value)||0;
+            let remain = total - pre;
+            const oldDebtOk = document.getElementById('toggleOldDebt').checked;
+            
+            if(currentPaymentMethod==='DEBT' || (!isPaid && remain>0)) {
+                if(!document.getElementById('inpName').value) return alert("Ghi nợ cần tên khách!");
+                const order = { id:document.getElementById('inpInvoiceID').value, date:document.getElementById('inpDate').value, name:document.getElementById('inpName').value, phone:document.getElementById('inpPhone').value, cart:JSON.parse(JSON.stringify(cartItems)) };
+                addDebtRecord(order, total, pre);
+                alert(`📖 Đã ghi nợ! (Trả: ${formatMoney(pre)}, Còn: ${formatMoney(remain)})`);
+            }
+            if(oldDebtOk) payOldDebtFully(document.getElementById('inpPhone').value);
+            
+            let cred = parseInt(document.getElementById('appliedCreditValue').value)||0;
+            if(cred>0) useCredit(document.getElementById('inpPhone').value, cred);
+
+
+
+
+            saveHistory(true);
+            
+            // Sync Customer
+            let p = document.getElementById('inpPhone').value;
+            if(p.length===10 && !customerList.some(c=>c.phone===p)) { customerList.push({name:document.getElementById('inpName').value, phone:p}); localStorage.setItem('thebao_customers', JSON.stringify(customerList)); }
+            
+            isOrderSaved=true; alert("✅ Đã lưu đơn hàng!");
+        }
+
+
+
+
+        function saveHistory(isNew=true) {
+            const id = document.getElementById('inpInvoiceID').value;
+            const item = {
+                id: id, date: document.getElementById('inpDate').value, time: document.getElementById('inpTime').value,
+                name: document.getElementById('inpName').value, phone: document.getElementById('inpPhone').value,
+                discount: document.getElementById('inpDiscount').value, surcharge: document.getElementById('inpSurcharge').value,
+                publicNote: document.getElementById('inpPublicNote').value, internalNote: document.getElementById('inpInternalNote').value,
+                payment: currentPaymentMethod, isPaid: isPaid, cart: JSON.parse(JSON.stringify(cartItems)),
+                total: parseInt(document.getElementById('outFinalTotal').innerText.replace(/\D/g,''))
+            };
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]");
+            if(isNew) { if(!h.some(x=>x.id===id)) h.unshift(item); else { if(confirm("Mã trùng. Ghi đè?")) { let idx=h.findIndex(x=>x.id===id); h[idx]=item; } } }
+            else { let idx=h.findIndex(x=>x.id===id); if(idx!==-1) h[idx]=item; }
+            h.sort((a,b)=>new Date(b.date+' '+b.time)-new Date(a.date+' '+a.time));
+            localStorage.setItem('invoiceHistory', JSON.stringify(h));
+            calculateTodayRevenue();
+        }
+
+
+
+
+        // --- EDIT MODE ---
+        function restoreHistory(id) {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]").find(x=>x.id===id);
+            if(!h) return;
+            if(cartItems.length>0 && !isEditMode && !confirm("Đè đơn hiện tại?")) return;
+            closeModal('historyModal');
+            isEditMode=true;
+            
+            document.getElementById('groupStandardBtns').style.display='none';
+            document.getElementById('groupEditBtns').style.display='block';
+            document.getElementById('editModeNotice').style.display='flex';
+            document.getElementById('lblEditID').innerText = h.id;
+            document.getElementById('inpInvoiceID').disabled=true;
+            
+            document.getElementById('inpInvoiceID').value=h.id; document.getElementById('inpDate').value=h.date; document.getElementById('inpTime').value=h.time;
+            document.getElementById('inpName').value=h.name; document.getElementById('inpPhone').value=h.phone;
+            document.getElementById('inpDiscount').value=h.discount; document.getElementById('inpSurcharge').value=h.surcharge||"";
+            document.getElementById('inpPublicNote').value=h.publicNote||""; document.getElementById('inpInternalNote').value=h.internalNote||"";
+            cartItems=h.cart; setPayment(h.payment||'CASH'); setPaymentStatus(h.isPaid);
+            renderAll();
+        }
+        function cancelEditMode() {
+            isEditMode=false; isDebtViewMode=false;
+            document.getElementById('groupStandardBtns').style.display='block';
+            document.getElementById('groupEditBtns').style.display='none';
+            document.getElementById('groupDebtBtns').style.display='none';
+            document.getElementById('editModeNotice').style.display='none';
+            document.getElementById('inpInvoiceID').disabled=false;
+            document.getElementById('invHeaderBg').classList.remove('debt-header');
+            document.getElementById('lblInvoiceTitle').innerText="HÓA ĐƠN BÁN HÀNG"; document.getElementById('lblInvoiceTitle').style.color="#004e92";
+            document.getElementById('lblTotalLabel').style.color="#333"; document.getElementById('lblTotalLabel').innerText="TỔNG CỘNG:";
+            document.getElementById('rowPaidAmount').style.display='none';
+            cartItems=[]; generateRandomInvoiceID(); document.getElementById('inpSurcharge').value=""; document.getElementById('inpPrepaid').value="";
+            renderAll();
+        }
+        function saveEditedOrder() {
+            if(!isEditMode) return;
+            saveHistory(false);
+            
+            // Sync Debt if exists
+            let id = document.getElementById('inpInvoiceID').value;
+            let list = getDebtList();
+            let d = list.find(x=>x.orderId===id);
+            if(d) {
+                let tot = parseInt(document.getElementById('outFinalTotal').innerText.replace(/\D/g,''));
+                let pre = parseInt(document.getElementById('inpPrepaid').value)||0;
+                d.name = document.getElementById('inpName').value; d.phone = document.getElementById('inpPhone').value;
+                d.originalAmount=tot; 
+                if(isPaid) { d.paidAmount=tot; d.remainingAmount=0; } else { d.paidAmount=pre; d.remainingAmount=tot-pre; }
+                saveDebtList(list);
+            }
+            alert("✅ Đã cập nhật!"); cancelEditMode();
+        }
+
+
+
+
+        // --- HISTORY DETAIL VIEW ---
+        function viewHistoryDetail(id) {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]").find(x=>x.id===id);
+            if(!h) return;
+
+
+
+
+            // Fill Data into History Modal
+            document.getElementById('hist_outBrandName').innerText = storeConfig.brandName;
+            document.getElementById('hist_outSlogan').innerText = storeConfig.slogan;
+            document.getElementById('hist_outHotline').innerText = `☎ Hotline: ${storeConfig.hotline}`;
+            document.getElementById('hist_outHotlineFooter').innerText = storeConfig.hotline;
+            document.getElementById('hist_outInvoiceID').innerText = h.id;
+            document.getElementById('hist_outDate').innerText = `${h.date.split('-')[2]}/${h.date.split('-')[1]}/${h.date.split('-')[0]} - ${h.time}`;
+            document.getElementById('hist_outName').innerText = h.name;
+            document.getElementById('hist_outPhone').innerText = h.phone;
+            document.getElementById('hist_rowPhone').style.display = h.phone ? 'flex' : 'none';
+            document.getElementById('hist_outPaymentMethod').innerText = h.payment === 'CASH' ? 'Tiền mặt' : (h.payment === 'TRANSFER' ? 'Chuyển khoản' : 'Ghi nợ');
+            
+            // Payment status HTML
+            if(h.isPaid) document.getElementById('hist_outPaymentStatusHTML').innerHTML = '<span class="paid-stamp">ĐÃ THANH TOÁN</span>';
+            else document.getElementById('hist_outPaymentStatusHTML').innerHTML = h.payment === 'DEBT' ? '<span class="debt-stamp">GHI NỢ</span>' : '<span style="color:#e74c3c;font-weight:bold;">Chưa thanh toán</span>';
+
+
+
+
+            // Fill Table
+            document.getElementById('hist_invoiceTableBody').innerHTML = h.cart.map(item => {
+                let faceDisplay = formatMoney(item.faceValue);
+                let fullName = `${item.cardType}` + (item.faceValue && item.faceValue!=="0" ? (!isNaN(parseFloat(item.faceValue)) ? ` x${faceDisplay}` : ` (${faceDisplay})`) : "");
+                let details = item.cardList ? item.cardList.map(c => {
+                    if(!c.code && !c.serial) return '';
+                    return `<div class="card-box">${c.code?`<span class="card-line"><span class="card-label">MÃ:</span><span class="card-val">${formatReadableCode(c.code)}</span></span>`:''} ${c.serial?`<span class="card-line" style="margin-top:2px;border-top:1px dotted #ccc;padding-top:2px;"><span class="card-label" style="color:#7f8c8d;">SERI:</span><span class="card-seri">${c.serial}</span></span>`:''}</div>`;
+                }).join('') : '';
+                return `<tr><td style="padding-top:10px;"><span class="item-name">${fullName}</span><div class="item-sub">${details}</div></td><td style="text-align:center;padding-top:10px;font-weight:bold;">${item.qty}</td><td style="text-align:right;padding-top:10px;font-weight:bold;">${formatMoney(item.total)}</td></tr>`;
+            }).join('');
+
+
+
+
+            // Totals
+            let total = h.cart.reduce((s,i)=>s+i.total,0);
+            let disc = parseInt(h.discount)||0;
+            let sur = parseInt(h.surcharge)||0;
+            let final = total + sur - disc;
+            
+            document.getElementById('hist_outSubTotal').innerText = formatMoney(total) + " đ";
+            document.getElementById('hist_rowSurcharge').style.display = sur>0?'flex':'none';
+            document.getElementById('hist_outSurchargeVal').innerText = "+"+formatMoney(sur)+" đ";
+            document.getElementById('hist_rowDiscount').style.display = disc>0?'flex':'none';
+            document.getElementById('hist_outDiscountVal').innerText = "-"+formatMoney(disc)+" đ";
+            document.getElementById('hist_outFinalTotal').innerText = formatMoney(final) + " đ";
+
+
+
+
+            // Note
+            document.getElementById('hist_outPublicNoteBox').style.display = h.publicNote && h.publicNote.trim() ? 'block' : 'none';
+            document.getElementById('hist_outPublicNoteContent').innerText = h.publicNote || "";
+
+
+
+
+            // QR & Barcode
+            // Only show QR if unpaid or cash mode
+            const qr = document.getElementById('hist_qrSection');
+            if(final > 0 && (!h.isPaid)) {
+                qr.style.display='block';
+                const content = (h.payment==='DEBT'?"Tra no ":"TT ") + h.id;
+                const url = `https://img.vietqr.io/image/${storeConfig.bankId}-${storeConfig.accNum}-compact.png?amount=${final}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(storeConfig.accName)}`;
+                document.getElementById('hist_qrImage').src = url;
+                const sel = document.getElementById('cfgBankId');
+                document.getElementById('hist_qrBankName').innerText = storeConfig.bankId; // Simplified, or lookup name
+                document.getElementById('hist_qrAccNum').innerText = `STK: ${storeConfig.accNum}`;
+            } else {
+                qr.style.display='none';
+            }
+            
+            const qBox = document.getElementById('hist_trackingQrCode'); qBox.innerHTML=""; 
+            new QRCode(qBox, {text:"https://gemini.google.com/gem/1lMiaZM3my_2J6Y3TmgkKL1s5e9jOI1fP?usp=sharing", width:65, height:65});
+            JsBarcode("#hist_trackingBarcode", h.id, {format:"CODE128", width:1.5, height:35, displayValue:true, fontSize:12, margin:0});
+
+
+
+
+            document.getElementById('historyDetailModal').style.display = 'flex';
+        }
+
+
+
+
+        function printHistoryDetail() {
+            document.body.classList.add('printing-history');
+            window.print();
+            setTimeout(() => { document.body.classList.remove('printing-history'); }, 1000);
+        }
+
+
+
+
+        function downloadHistoryDetail() {
+            html2canvas(document.getElementById('historyInvoiceArea'),{scale:2}).then(c=>{
+                const l=document.createElement('a');
+                l.download='HD_LichSu.png';
+                l.href=c.toDataURL();
+                l.click();
+            });
+        }
+
+
+
+
+        function shareHistoryDetail() {
+            html2canvas(document.getElementById('historyInvoiceArea'),{scale:2}).then(c=>{
+                c.toBlob(b=>{
+                    const f=new File([b],"HD_LichSu.png",{type:"image/png"}); 
+                    if(navigator.share) navigator.share({files:[f]}); 
+                    else {
+                        const l=document.createElement('a');
+                        l.download='HD_LichSu.png';
+                        l.href=c.toDataURL();
+                        l.click();
+                    } 
+                });
+            }); 
+        }
+
+
+
+
+        // --- DEBT VIEW ---
+        function viewDebtInvoice(did) {
+            let list = getDebtList(); let d = list.find(x=>x.id===did); if(!d) return;
+            closeModal('debtModal'); isDebtViewMode=true;
+            document.getElementById('groupStandardBtns').style.display='none';
+            document.getElementById('groupEditBtns').style.display='none'; /* Hide edit btns when viewing debt */
+            document.getElementById('groupDebtBtns').style.display='block';
+            document.getElementById('inpInvoiceID').value=d.orderId; document.getElementById('inpName').value=d.name; document.getElementById('inpPhone').value=d.phone; document.getElementById('inpDate').value=d.date;
+            cartItems=d.items;
+            document.getElementById('lblInvoiceTitle').innerText="THÔNG BÁO CÔNG NỢ"; document.getElementById('lblInvoiceTitle').style.color="#c0392b";
+            document.getElementById('invHeaderBg').classList.add('debt-header');
+            renderAll(true);
+            document.getElementById('outSubTotal').innerText=formatMoney(d.originalAmount)+" đ";
+            document.getElementById('rowDiscount').style.display='none'; document.getElementById('rowCreditUsed').style.display='none';
+            document.getElementById('rowPaidAmount').style.display='flex'; document.getElementById('outPaidAmount').innerText=formatMoney(d.paidAmount)+" đ";
+            document.getElementById('lblTotalLabel').innerText="CÒN NỢ:"; document.getElementById('lblTotalLabel').style.color="#c0392b";
+            document.getElementById('outFinalTotal').innerText=formatMoney(d.remainingAmount)+" đ";
+            document.getElementById('outPaymentMethod').innerText="Ghi nợ"; document.getElementById('outPaymentStatusHTML').innerHTML='<span class="debt-stamp">CHƯA THANH TOÁN</span>';
+            renderQR(d.remainingAmount);
+        }
+
+
+
+
+        // --- NEW: BACKUP & RESTORE JSONL + PROGRESS ---
+
+
+
+
+        function updateProgress(percent, secondsRemaining) {
+            const bar = document.getElementById('progressBar');
+            const timeEl = document.getElementById('timeRemaining');
+            bar.style.width = percent + '%';
+            bar.innerText = Math.floor(percent) + '%';
+            
+            if (secondsRemaining !== null && secondsRemaining > 0) {
+                const mins = Math.floor(secondsRemaining / 60);
+                const secs = Math.floor(secondsRemaining % 60);
+                timeEl.innerText = `Còn khoảng: ${mins} phút ${secs} giây...`;
+            } else if (percent >= 100) {
+                timeEl.innerText = "Hoàn tất! Đang xử lý cuối cùng...";
+            } else {
+                timeEl.innerText = "Đang tính toán thời gian...";
+            }
+        }
+
+
+
+
+        function showProgressModal(title) {
+            document.getElementById('progressModal').style.display = 'flex';
+            document.getElementById('progressTitle').innerText = title;
+            document.getElementById('btnCloseProgress').style.display = 'none';
+            updateProgress(0, null);
+        }
+
+
+
+
+        function closeProgressModal() {
+             document.getElementById('progressModal').style.display = 'none';
+        }
+
+
+
+
+        function formatTime(ms) {
+            if (!ms || ms < 0) return "0s";
+            const s = Math.floor(ms / 1000);
+            const m = Math.floor(s / 60);
+            return m > 0 ? `${m}m ${s%60}s` : `${s}s`;
+        }
+
+
+
+
+        // 1. BACKUP (JSONL)
+        async function backupDataJSONL() {
+            showProgressModal("ĐANG ĐÓNG GÓI DỮ LIỆU...");
+            const startStr = document.getElementById('backupStart').value;
+            const endStr = document.getElementById('backupEnd').value;
+            const start = startStr ? new Date(startStr) : null;
+            const end = endStr ? new Date(endStr) : null;
+            if(end) end.setHours(23,59,59);
+
+
+
+
+            const inRange = (dStr) => { if(!dStr) return true; const d=new Date(dStr); return (!start || d>=start) && (!end || d<=end); };
+
+
+
+
+            // We will build an array of JSON Strings (lines)
+            // Header first
+            const meta = {
+                type: 'meta',
+                configs: localStorage.getItem('thebao_store_config'),
+                catalog: localStorage.getItem('thebao_catalog_v6'),
+                customers: localStorage.getItem('thebao_customers'),
+                credits: localStorage.getItem('thebao_customer_credit'),
+                inventory: localStorage.getItem('thebao_inventory') // Include stock
+            };
+            
+            const chunks = [JSON.stringify(meta) + '\n'];
+            
+            // Process History
+            const history = JSON.parse(localStorage.getItem('invoiceHistory')||"[]").filter(h=>inRange(h.date));
+            // Process Debt
+            const debts = JSON.parse(localStorage.getItem('thebao_debt_list')||"[]").filter(d=>inRange(d.date));
+
+
+
+
+            const totalItems = history.length + debts.length;
+            let processed = 0;
+
+
+
+
+            // Use setTimeout loop to not freeze UI
+            const processBatch = async () => {
+                const startTime = Date.now();
+                
+                // Process History Batch
+                for (let item of history) {
+                    chunks.push(JSON.stringify({type: 'history', data: item}) + '\n');
+                    processed++;
+                    if(processed % 100 === 0) {
+                         const pct = (processed / totalItems) * 100;
+                         updateProgress(pct, null); // Calculating time for internal generation is tricky/fast enough to skip
+                         await new Promise(r => setTimeout(r, 0)); // Yeild to UI
+                    }
+                }
+
+
+
+
+                // Process Debt Batch
+                for (let item of debts) {
+                    chunks.push(JSON.stringify({type: 'debt', data: item}) + '\n');
+                    processed++;
+                     if(processed % 100 === 0) {
+                         const pct = (processed / totalItems) * 100;
+                         updateProgress(pct, null);
+                         await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+
+
+
+
+                updateProgress(100, 0);
+                
+                // Create Blob
+                const blob = new Blob(chunks, {type: "application/x-jsonlines"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Backup_Full_${new Date().toISOString().slice(0,10)}.jsonl`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                closeProgressModal();
+            };
+
+
+
+
+            setTimeout(processBatch, 100);
+        }
+       // 2. RESTORE (JSONL Chunked)
+        function triggerRestoreJSONL(mode) {
+            restoreMode = mode;
+            document.getElementById('fileRestoreJSONL').click();
+        }
+
+
+
+
+        function restoreDataJSONL(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+
+
+
+            showProgressModal("ĐANG KHÔI PHỤC DỮ LIỆU...");
+            
+            const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+            let offset = 0;
+            const fileSize = file.size;
+            let startTime = Date.now();
+            let partialLine = ""; // Handle split lines at chunk boundaries
+            
+            // Prepare Containers
+            let newHistory = [];
+            let newDebts = [];
+            let newConfigs = null, newCatalog = null, newCustomers = null, newCredits = null, newInventory = null;
+            let countH = 0, countD = 0;
+
+
+
+
+            // Existing Data for Merge check
+            const currentHistory = JSON.parse(localStorage.getItem('invoiceHistory')||"[]");
+            const currentDebts = JSON.parse(localStorage.getItem('thebao_debt_list')||"[]");
+            const currentHistoryIds = new Set(currentHistory.map(x=>x.id));
+            const currentDebtIds = new Set(currentDebts.map(x=>x.id));
+
+
+
+
+            const reader = new FileReader();
+
+
+
+
+            reader.onload = function(e) {
+                const chunk = e.target.result;
+                const lines = (partialLine + chunk).split('\n');
+                
+                // Last line might be incomplete if not EOF
+                partialLine = offset + chunkSize < fileSize ? lines.pop() : "";
+
+
+
+
+                for (let line of lines) {
+                    if(!line.trim()) continue;
+                    try {
+                        const obj = JSON.parse(line);
+                        if (obj.type === 'meta') {
+                            newConfigs = obj.configs;
+                            newCatalog = obj.catalog;
+                            newCustomers = obj.customers;
+                            newCredits = obj.credits;
+                            newInventory = obj.inventory;
+                        } else if (obj.type === 'history') {
+                             if (!currentHistoryIds.has(obj.data.id)) {
+                                 newHistory.push(obj.data);
+                                 countH++;
+                             }
+                        } else if (obj.type === 'debt') {
+                             if (!currentDebtIds.has(obj.data.id)) {
+                                 newDebts.push(obj.data);
+                                 countD++;
+                             }
+                        }
+                    } catch (err) {
+                        console.error("Lỗi dòng JSON:", err);
+                    }
+                }
+
+
+
+
+                offset += chunkSize;
+                
+                // Progress Calc
+                const progress = Math.min((offset / fileSize) * 100, 100);
+                const elapsedTime = (Date.now() - startTime) / 1000; // seconds
+                const speed = offset / elapsedTime; // bytes per second
+                const remainingBytes = fileSize - offset;
+                const remainingTime = speed > 0 ? remainingBytes / speed : 0;
+                
+                updateProgress(progress, remainingTime);
+
+
+
+
+                if (offset < fileSize) {
+                    readNextChunk();
+                } else {
+                    finishRestore();
+                }
+            };
+
+
+
+
+            reader.onerror = function() {
+                alert("Lỗi đọc file!");
+                closeProgressModal();
+            };
+
+
+
+
+            function readNextChunk() {
+                const slice = file.slice(offset, offset + chunkSize);
+                reader.readAsText(slice);
+            }
+
+
+
+
+            function finishRestore() {
+                try {
+                    const finalHistory = [...newHistory, ...currentHistory];
+                    finalHistory.sort((a,b)=>new Date(b.date+' '+b.time)-new Date(a.date+' '+a.time));
+                    
+                    const finalDebts = [...newDebts, ...currentDebts];
+                    finalDebts.sort((a,b)=>new Date(b.date) - new Date(a.date));
+
+
+
+
+                    localStorage.setItem('invoiceHistory', JSON.stringify(finalHistory));
+                    localStorage.setItem('thebao_debt_list', JSON.stringify(finalDebts));
+
+
+
+
+                    if (newConfigs && confirm("Bạn có muốn khôi phục cả Cấu hình Shop, Danh mục SP, Kho thẻ & Khách hàng không?")) {
+                         if(newConfigs) localStorage.setItem('thebao_store_config', newConfigs);
+                         if(newCatalog) localStorage.setItem('thebao_catalog_v6', newCatalog);
+                         if(newCustomers) localStorage.setItem('thebao_customers', newCustomers);
+                         if(newCredits) localStorage.setItem('thebao_customer_credit', newCredits);
+                         if(newInventory) localStorage.setItem('thebao_inventory', newInventory);
+                    }
+
+
+
+
+                    document.getElementById('progressTitle').innerText = "HOÀN TẤT!";
+                    document.getElementById('progressAction').innerText = `Đã thêm ${countH} đơn hàng và ${countD} công nợ.`;
+                    document.getElementById('btnCloseProgress').style.display = 'inline-block';
+                    
+                    alert("✅ Khôi phục thành công!");
+                    location.reload();
+
+
+
+
+                } catch (e) {
+                    alert("❌ Lỗi Quota: Trình duyệt không đủ bộ nhớ để lưu lượng dữ liệu này. Hãy xóa bớt đơn cũ hoặc dùng máy tính khác.");
+                    closeProgressModal();
+                }
+            }
+
+
+
+
+            readNextChunk();
+        }
+
+
+
+
+        // Partial Backups (Old Functions kept)
+        function exportShopConfig() {
+            const cfg = localStorage.getItem('thebao_store_config') || "{}";
+            downloadJSON(JSON.parse(cfg), "Config_Shop.json");
+        }
+        function importShopConfig(inp) {
+            const f = inp.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    if(d.brandName) {
+                        localStorage.setItem('thebao_store_config', JSON.stringify(d));
+                        alert("✅ Đã cập nhật cấu hình shop!");
+                        location.reload();
+                    } else alert("File không hợp lệ!");
+                } catch(err) { alert("Lỗi file JSON!"); }
+            };
+            r.readAsText(f);
+        }
+        function exportCatalog() {
+            const cat = localStorage.getItem('thebao_catalog_v6') || "[]";
+            downloadJSON(JSON.parse(cat), "Products_Catalog.json");
+        }
+        function importCatalog(inp) {
+            const f = inp.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    if(Array.isArray(d)) {
+                        localStorage.setItem('thebao_catalog_v6', JSON.stringify(d));
+                        alert("✅ Đã cập nhật danh sách sản phẩm!");
+                        location.reload();
+                    } else alert("File không hợp lệ!");
+                } catch(err) { alert("Lỗi file JSON!"); }
+            };
+            r.readAsText(f);
+        }
+        function exportCustomersExcel() {
+            if(customerList.length === 0) return alert("Danh sách trống!");
+            const data = customerList.map(c => ({ "Ten_Khach": c.name, "SDT": c.phone }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "KhachHang");
+            XLSX.writeFile(wb, "DanhBa_KhachHang.xlsx");
+        }
+        function importCustomersExcel(inp) {
+            const f = inp.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, {type: 'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(ws);
+                    let count = 0;
+                    json.forEach(row => {
+                        const name = row["Ten_Khach"] || row["Tên"] || row["Name"];
+                        let phone = row["SDT"] || row["SĐT"] || row["Phone"];
+                        if(name && phone) {
+                            phone = String(phone).replace(/'/g,"").trim(); 
+                            if(!customerList.some(c => c.phone === phone)) {
+                                customerList.push({name: name, phone: phone});
+                                count++;
+                            }
+                        }
+                    });
+                    if(count > 0) {
+                        localStorage.setItem('thebao_customers', JSON.stringify(customerList));
+                        renderCustomerTable();
+                        alert(`✅ Đã thêm ${count} khách hàng mới từ danh bạ!`);
+                    } else alert("Không tìm thấy khách mới hoặc file lỗi!");
+                } catch(err) { alert("Lỗi đọc file Excel!"); }
+            };
+            r.readAsArrayBuffer(f);
+        }
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+            const l = document.createElement("a"); l.href=URL.createObjectURL(blob); l.download=filename; l.click();
+        }
+
+
+
+
+        // 5. HISTORY EXCEL
+        function exportHistoryToExcel() {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory') || "[]");
+            if(h.length === 0) return alert("Không có dữ liệu để xuất!");
+            const data = h.map(item => ({
+                "Mã HĐ": item.id,
+                "Ngày": item.date,
+                "Giờ": item.time,
+                "Tên Khách": item.name,
+                "SĐT": item.phone,
+                "Tổng tiền": item.total,
+                "Thanh toán": item.payment,
+                "Trạng thái": item.isPaid ? 'Đã TT' : 'Chưa TT',
+                "Ghi chú": item.publicNote || "",
+                "__CartData_JSON__": JSON.stringify(item.cart) 
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Lịch Sử Đơn Hàng");
+            XLSX.writeFile(wb, "Backup_HoaDon_Full.xlsx");
+        }
+
+
+
+
+        // --- NEW: Export SPECIFIC Customer History to Excel ---
+        function exportCurrentCustomerHistory() {
+            if (!currentCrmPhone) return alert("Chưa chọn khách hàng!");
+            
+            let h = JSON.parse(localStorage.getItem('invoiceHistory') || "[]");
+            // Filter by phone
+            let cusHistory = h.filter(x => x.phone === currentCrmPhone);
+            
+            if (cusHistory.length === 0) return alert("Khách này chưa có lịch sử mua hàng!");
+
+
+
+
+            // Format data nicely for Excel
+            const data = cusHistory.map(item => {
+                let prodSum = item.cart.map(c => `${c.cardType} x${c.qty}`).join(', ');
+                return {
+                    "Mã HĐ": item.id,
+                    "Ngày": item.date,
+                    "Giờ": item.time,
+                    "Tên Khách": item.name,
+                    "SĐT": item.phone,
+                    "Sản phẩm": prodSum,
+                    "Tổng tiền": item.total,
+                    "Thanh toán": item.payment === 'CASH' ? 'Tiền mặt' : (item.payment === 'TRANSFER' ? 'Chuyển khoản' : 'Ghi nợ'),
+                    "Trạng thái": item.isPaid ? 'Đã TT' : 'Chưa TT',
+                    "Ghi chú": item.publicNote || ""
+                };
+            });
+
+
+
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "LichSu_" + currentCrmPhone);
+            XLSX.writeFile(wb, `LichSu_Khach_${currentCrmPhone}.xlsx`);
+        }
+
+
+
+
+        function triggerImportExcel() { document.getElementById('fileImportExcel').click(); }
+        function importFromExcel(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    if(jsonData.length === 0) return alert("File rỗng!");
+                    let currentHist = JSON.parse(localStorage.getItem('invoiceHistory') || "[]");
+                    let count = 0;
+                    jsonData.forEach(row => {
+                        const id = row["Mã HĐ"];
+                        if (!currentHist.some(h => h.id === id)) {
+                            let cart = [];
+                            try {
+                                if(row["__CartData_JSON__"]) cart = JSON.parse(row["__CartData_JSON__"]);
+                                else {
+                                    cart = [{
+                                        cardType: "Import Excel", 
+                                        faceValue: 0, 
+                                        price: row["Tổng tiền"] || 0, 
+                                        qty: 1, 
+                                        total: row["Tổng tiền"] || 0, 
+                                        cardList: [] 
+                                    }];
+                                }
+                            } catch(e) { console.log("Lỗi parse cart:", e); }
+                            const newItem = {
+                                id: id,
+                                date: row["Ngày"],
+                                time: row["Giờ"] || "00:00",
+                                name: row["Tên Khách"] || "Khách lẻ",
+                                phone: row["SĐT"] ? String(row["SĐT"]).replace(/'/g,"") : "",
+                                discount: 0, 
+                                surcharge: 0,
+                                publicNote: row["Ghi chú"] || "",
+                                internalNote: "",
+                                payment: row["Thanh toán"] || "CASH",
+                                isPaid: row["Trạng thái"] === 'Đã TT',
+                                cart: cart,
+                                total: row["Tổng tiền"] || 0
+                            };
+                            currentHist.push(newItem);
+                            count++;
+                            if(newItem.phone.length >= 10 && !customerList.some(c => c.phone === newItem.phone)) {
+                                customerList.push({name: newItem.name, phone: newItem.phone});
+                            }
+                        }
+                    });
+                    if(count > 0) {
+                        currentHist.sort((a,b)=>new Date(b.date+' '+b.time)-new Date(a.date+' '+a.time));
+                        localStorage.setItem('invoiceHistory', JSON.stringify(currentHist));
+                        localStorage.setItem('thebao_customers', JSON.stringify(customerList));
+                        alert(`✅ Đã khôi phục thành công ${count} đơn hàng từ Excel!`);
+                        location.reload();
+                    } else {
+                        alert("Không tìm thấy dữ liệu mới hoặc file không đúng định dạng!");
+                    }
+                } catch(err) {
+                    alert("Lỗi đọc file Excel! Hãy đảm bảo file đúng định dạng .xlsx");
+                    console.error(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+
+
+
+        // --- COMMON UTILS ---
+        function generateRandomInvoiceID() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; let r=""; for(let i=0;i<5;i++) r+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('inpInvoiceID').value="TB"+r; updateInvoiceHeader(); renderQR(); }
+        function renderTrackingCodes(code) { const q = document.getElementById('trackingQrCode'); q.innerHTML=""; new QRCode(q, {text:"https://gemini.google.com/gem/1lMiaZM3my_2J6Y3TmgkKL1s5e9jOI1fP?usp=sharing", width:65, height:65}); JsBarcode("#trackingBarcode", code, {format:"CODE128", width:1.5, height:35, displayValue:true, fontSize:12, margin:0}); }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function openHistoryModal() { document.getElementById('historyModal').style.display='flex'; loadHistory(false); }
+        function openDebtModal() { document.getElementById('debtModal').style.display='flex'; renderDebtList(); }
+        function calculateTodayRevenue() {
+            const t = document.getElementById('inpDate').value || new Date().toISOString().slice(0,10);
+            const h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]");
+            let c=0, tr=0, d=0;
+            h.forEach(x => { if(x.date===t) { if(x.payment==='DEBT' && !x.isPaid) d+=x.total; else if(x.payment==='TRANSFER') tr+=x.total; else c+=x.total; } });
+            document.getElementById('dailyTotalDisplay').innerText = formatMoney(c+tr+d)+" đ";
+            document.getElementById('revCash').innerText = formatMoney(c); document.getElementById('revTransfer').innerText = formatMoney(tr); document.getElementById('revDebt').innerText = formatMoney(d);
+        }
+
+
+
+
+        // --- CUSTOMER & DEBT UI LOGIC ---
+        function loadCustomerList() { customerList = JSON.parse(localStorage.getItem('thebao_customers')||"[]"); }
+        function addNewCustomer() {
+            const n=document.getElementById('newCusName').value; const p=document.getElementById('newCusPhone').value;
+            if(!n||!p) return; if(customerList.some(c=>c.phone===p)) return alert("Trùng SĐT");
+            customerList.push({name:n, phone:p}); localStorage.setItem('thebao_customers', JSON.stringify(customerList));
+            renderCustomerTable(); document.getElementById('newCusName').value=""; document.getElementById('newCusPhone').value="";
+        }
+        function renderCustomerTable() { 
+            document.getElementById('customerTableBody').innerHTML = customerList.map(c=>
+                `<tr onclick="openCRM('${c.phone}')"><td>${c.name}</td><td>${c.phone}</td></tr>`
+            ).join(''); 
+        }
+        function syncCustomersFromHistory() {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]"), c=0;
+            h.forEach(x=>{ if(x.name!=='Khách lẻ' && x.phone.length===10 && !customerList.some(cu=>cu.phone===x.phone)) { customerList.push({name:x.name, phone:x.phone}); c++; } });
+            localStorage.setItem('thebao_customers', JSON.stringify(customerList)); alert(`Đã thêm ${c} khách.`); renderCustomerTable();
+        }
+        function suggestCustomer(inp, type) {
+            const v = inp.value.toLowerCase().trim(); const list = document.getElementById(type==='name'?'suggestList_name':'suggestList_phone');
+            document.querySelectorAll('.suggestion-list').forEach(e=>e.style.display='none');
+            if(!v) return;
+            const matches = customerList.filter(c => type==='name' ? c.name.toLowerCase().includes(v) : c.phone.includes(v)).slice(0,5);
+            if(matches.length===0) return;
+            list.innerHTML = matches.map(c=>`<div class="suggestion-item" onclick="fillCustomer('${c.name}','${c.phone}')"><strong>${c.name}</strong> - ${c.phone}</div>`).join('');
+            list.style.display='block';
+        }
+        function fillCustomer(n,p) { document.getElementById('inpName').value=n; document.getElementById('inpPhone').value=p; document.querySelectorAll('.suggestion-list').forEach(e=>e.style.display='none'); updateInvoiceHeader(); checkOldDebt(p); }
+        function getCredits() { return JSON.parse(localStorage.getItem('thebao_customer_credit')||"{}"); }
+        function checkCreditDisplay() { 
+            const p = document.getElementById('inpPhone').value; const c = getCredits()[p]||0; 
+            const b = document.getElementById('creditNotificationBox');
+            if(c>0) { b.style.display='flex'; document.getElementById('creditAmountDisplay').innerText=formatMoney(c); document.getElementById('lblCreditHint').style.display='inline'; } 
+            else { b.style.display='none'; document.getElementById('lblCreditHint').style.display='none'; }
+        }
+        function applyCreditToOrder() { 
+            const c = getCredits()[document.getElementById('inpPhone').value]||0; 
+            if(c>0) { document.getElementById('appliedCreditValue').value = Math.min(c, parseInt(document.getElementById('outSubTotal').innerText.replace(/\D/g,''))||c); renderAll(); } 
+        }
+        function clearCreditManual() { if(confirm("Xóa credit?")) { let c=getCredits(); c[document.getElementById('inpPhone').value]=0; localStorage.setItem('thebao_customer_credit', JSON.stringify(c)); checkCreditDisplay(); } }
+        function useCredit(p, amt) { let c=getCredits(); if(c[p]>=amt) { c[p]-=amt; localStorage.setItem('thebao_customer_credit', JSON.stringify(c)); } }
+        function switchDebtTab(t) { currentDebtTab=t; document.querySelectorAll('#debtModal .tab-item').forEach(e=>e.classList.remove('active')); document.getElementById(t==='active'?'tabDebtActive':'tabDebtHistory').classList.add('active'); renderDebtList(); }
+        function renderDebtList() {
+            const list=getDebtList(), s=document.getElementById('inpSearchDebt').value.toLowerCase();
+            const filtered = list.filter(d => (currentDebtTab==='active'?d.remainingAmount>0:d.remainingAmount<=0) && (d.name.toLowerCase().includes(s)||d.phone.includes(s)));
+            let tot=list.filter(d=>d.remainingAmount>0).reduce((a,b)=>a+b.remainingAmount,0);
+            let cred=Object.values(getCredits()).reduce((a,b)=>a+b,0);
+            document.getElementById('lblGlobalDebt').innerText = formatMoney(tot)+" đ";
+            document.getElementById('lblGlobalCredit').innerText = formatMoney(cred)+" đ";
+            document.getElementById('debtListContainer').innerHTML = filtered.length===0 ? '<p style="text-align:center;color:#999;">Trống</p>' : 
+                filtered.map(d=>`<div style="background:#fff; border:1px solid #eee; border-left:4px solid ${d.remainingAmount>0?'#c0392b':'#27ae60'}; padding:10px; margin-bottom:5px; border-radius:4px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${d.name}</span> <span style="color:${d.remainingAmount>0?'#c0392b':'#27ae60'}">${formatMoney(d.remainingAmount)} đ</span></div>
+                    <div style="font-size:12px; color:#666;">${d.date} | Mã: ${d.orderId}</div>
+                    <div style="text-align:right; margin-top:5px;">
+                        <button class="btn-mini btn-info" onclick="viewDebtInvoice('${d.id}')">Xem</button>
+                        ${d.remainingAmount>0?`<button class="btn-mini btn-success" onclick="payDebt('${d.id}')">Trả</button>`:''}
+                        <button class="btn-mini btn-danger" onclick="deleteDebt('${d.id}')">Xóa</button>
+                    </div>
+                </div>`).join('');
+        }
+        function payDebt(id) {
+            let l=getDebtList(), d=l.find(x=>x.id===id); if(!d) return;
+            let m = prompt("Nhập số tiền trả:", d.remainingAmount); if(!m) return;
+            let pay = parseInt(m); if(isNaN(pay)) return;
+            let excess = pay - d.remainingAmount;
+            if(excess>0) { if(confirm(`Thừa ${formatMoney(excess)} đ. Lưu Credit?`)) { let c=getCredits(); c[d.phone]=(c[d.phone]||0)+excess; localStorage.setItem('thebao_customer_credit', JSON.stringify(c)); } d.paidAmount+=d.remainingAmount; d.remainingAmount=0; }
+            else { d.paidAmount+=pay; d.remainingAmount-=pay; }
+            if(d.remainingAmount<=0) updateHistoryPaidStatus(d.orderId);
+            saveDebtList(l); renderDebtList(); calculateTodayRevenue();
+        }
+        function deleteDebt(id) { if(confirm("Xóa?")) { saveDebtList(getDebtList().filter(x=>x.id!==id)); renderDebtList(); } }
+        function loadHistory(all) {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory')||"[]"), s=document.getElementById('inpSearchHistory').value.toLowerCase();
+            const d1=document.getElementById('histFilterStart').value, d2=document.getElementById('histFilterEnd').value;
+            if(!all && !s && d1 && d2) { const start=new Date(d1), end=new Date(d2); end.setHours(23,59,59); h=h.filter(x=>{const d=new Date(x.date); return d>=start && d<=end;}); }
+            if(s) h=h.filter(x=>x.name.toLowerCase().includes(s)||x.id.toLowerCase().includes(s));
+            document.getElementById('historyListUI').innerHTML = h.length===0 ? '<p style="text-align:center;color:#999;">Không có đơn hàng.</p>' :
+                h.map(x=>`<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>${x.id}</strong> - ${x.name}<br><span style="font-size:11px; color:#666;">${x.date} | ${x.payment}</span></div>
+                    <div style="text-align:right;">
+                        <strong style="color:#27ae60">${formatMoney(x.total)}</strong><br>
+                        <span style="font-size:11px; font-weight:bold; color:${x.isPaid?'#27ae60':'#e74c3c'}">${x.isPaid?'Đã TT':'Chưa TT'}</span>
+                        <div style="margin-top:2px;">
+                            <button class="btn-mini btn-info" onclick="viewHistoryDetail('${x.id}')">👁️ Xem</button>
+                            <button class="btn-mini btn-warning" onclick="restoreHistory('${x.id}')">✏️ Sửa</button>
+                        </div>
+                    </div>
+                </div>`).join('');
+            document.getElementById('histLoadMoreBtn').style.display = (all||s)?'none':'block';
+        }
+        function exportDebtToExcel() {
+            let l=getDebtList(); if(l.length===0) return alert("Trống!");
+            let csv="\uFEFFMã,Ngày,Khách,SĐT,Gốc,Đã Trả,Còn Nợ\n"+l.map(d=>`"${d.orderId}","${d.date}","${d.name}","'${d.phone}",${d.originalAmount},${d.paidAmount},${d.remainingAmount}`).join('\n');
+            const link=document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); link.download="CongNo.csv"; link.click();
+        }
+
+
+
+
+        // --- CRM ---
+        let currentCrmPhone = '';
+        function openCRM(phone) {
+            const cus = customerList.find(c => c.phone === phone);
+            if (!cus) return;
+            currentCrmPhone = phone;
+            document.getElementById('crmNameInput').value = cus.name;
+            document.getElementById('crmPhoneInput').value = cus.phone;
+            document.getElementById('crmOriginalPhone').value = cus.phone;
+            document.getElementById('crmFilterStart').value = "";
+            document.getElementById('crmFilterEnd').value = "";
+            document.getElementById('crmSearchInput').value = "";
+            renderCRMHistory();
+            document.getElementById('customerDetailModal').style.display = 'flex';
+        }
+        function renderCRMHistory() {
+            let h = JSON.parse(localStorage.getItem('invoiceHistory') || "[]");
+            h = h.filter(x => x.phone === currentCrmPhone);
+            const totalSpend = h.reduce((acc, curr) => acc + curr.total, 0);
+            document.getElementById('crmTotalSpend').innerText = formatMoney(totalSpend) + " đ";
+            const debtList = getDebtList();
+            const currentDebt = debtList
+                .filter(d => d.phone === currentCrmPhone && d.remainingAmount > 0)
+                .reduce((acc, d) => acc + d.remainingAmount, 0);
+            document.getElementById('crmCurrentDebt').innerText = formatMoney(currentDebt) + " đ";
+            const startStr = document.getElementById('crmFilterStart').value;
+            const endStr = document.getElementById('crmFilterEnd').value;
+            const searchStr = document.getElementById('crmSearchInput').value.toLowerCase().trim();
+            if (startStr && endStr) {
+                const s = new Date(startStr);
+                const e = new Date(endStr); e.setHours(23,59,59);
+                h = h.filter(x => { const d = new Date(x.date); return d >= s && d <= e; });
+            }
+            if (searchStr) {
+                h = h.filter(x => x.id.toLowerCase().includes(searchStr));
+            }
+            const tbody = document.getElementById('crmHistoryBody');
+            if (h.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">Không có đơn hàng nào</td></tr>';
+            else {
+                tbody.innerHTML = h.map(item => {
+                    let prodSum = item.cart.map(c => `${c.cardType} x${c.qty}`).join(', ');
+                    if(prodSum.length > 30) prodSum = prodSum.substring(0,30) + '...';
+                    return `<tr><td><a href="#" onclick="viewHistoryDetail('${item.id}')" style="color:#007bff; text-decoration:none;">${item.id}</a></td><td>${item.date}</td><td>${prodSum}</td><td style="text-align:right;">${formatMoney(item.total)}</td></tr>`;
+                }).join('');
+            }
+        }
+        function saveCRMDetails() {
+            const newName = document.getElementById('crmNameInput').value.trim();
+            const newPhone = document.getElementById('crmPhoneInput').value.trim();
+            const originalPhone = document.getElementById('crmOriginalPhone').value;
+            if (!newName || !newPhone) return alert("Vui lòng nhập đủ thông tin!");
+            if (newPhone !== originalPhone) {
+                if (customerList.some(c => c.phone === newPhone)) return alert("Số điện thoại mới đã tồn tại cho khách khác!");
+            }
+            const idx = customerList.findIndex(c => c.phone === originalPhone);
+            if (idx !== -1) {
+                customerList[idx].name = newName;
+                customerList[idx].phone = newPhone;
+                localStorage.setItem('thebao_customers', JSON.stringify(customerList));
+                renderCustomerTable();
+                currentCrmPhone = newPhone;
+                document.getElementById('crmOriginalPhone').value = newPhone;
+                alert("✅ Đã cập nhật thông tin khách hàng!");
+                renderCRMHistory(); 
+            }
+        }
+
+
+
+
+        // --- PRINT & SHARE ---
+        function printProvisional() { document.getElementById('invoiceArea').classList.add('provisional-hidden'); document.getElementById('lblInvoiceTitle').innerText="HÓA ĐƠN TẠM TÍNH"; setTimeout(()=>{window.print();document.getElementById('invoiceArea').classList.remove('provisional-hidden');document.getElementById('lblInvoiceTitle').innerText="HÓA ĐƠN BÁN HÀNG";},500); }
+        function printOfficial() { if(isDebtViewMode) return alert("Đang xem nợ, không in!"); window.print(); }
+        function downloadInvoiceImage() { html2canvas(document.getElementById('invoiceArea'),{scale:2}).then(c=>{const l=document.createElement('a');l.download='HD.png';l.href=c.toDataURL();l.click();}); }
+        function shareProvisionalImage() { 
+            const n=document.getElementById('invoiceArea'); n.classList.add('provisional-hidden'); document.getElementById('lblInvoiceTitle').innerText="HÓA ĐƠN TẠM TÍNH";
+            html2canvas(n,{scale:2}).then(c=>{c.toBlob(b=>{const f=new File([b],"Tam.png",{type:"image/png"}); if(navigator.share) navigator.share({files:[f]}); else {const l=document.createElement('a');l.download='Tam.png';l.href=c.toDataURL();l.click();} n.classList.remove('provisional-hidden'); document.getElementById('lblInvoiceTitle').innerText="HÓA ĐƠN BÁN HÀNG"; });}); 
+        }
+        function shareInvoiceImage() { html2canvas(document.getElementById('invoiceArea'),{scale:2}).then(c=>{c.toBlob(b=>{const f=new File([b],"HD.png",{type:"image/png"}); if(navigator.share) navigator.share({files:[f]}); else {const l=document.createElement('a');l.download='HD.png';l.href=c.toDataURL();l.click();} });}); }
+
+
+
+
+        init();
+    </script>
+<div id="authModal" class="modal-overlay" style="display: flex; z-index: 99999;">
+    <div class="modal-box" style="max-width: 350px; text-align: center;">
+        <h3 style="color:#004e92; margin-top:0;">🔐 ĐĂNG NHẬP HỆ THỐNG</h3>
+        <p style="font-size:13px; color:#666;">Đăng nhập để tự động sao lưu dữ liệu.</p>
+        <input type="email" id="txtEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ddd; border-radius:4px;">
+        <input type="password" id="txtPassword" placeholder="Mật khẩu" style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box; border:1px solid #ddd; border-radius:4px;">
+        
+        <button class="btn btn-primary" onclick="handleLogin()">ĐĂNG NHẬP</button>
+        <button class="btn btn-secondary" onclick="handleSignUp()" style="margin-top:5px;">Đăng ký mới</button>
+        <p id="authError" style="color:red; font-size:12px; margin-top:10px;"></p>
+    </div>
+</div>
+
+
+<div style="position:fixed; bottom:10px; right:10px; z-index:900;">
+    <span id="userEmailDisplay" style="background:#333; color:white; padding:5px 10px; border-radius:15px; font-size:11px;">Chưa đăng nhập</span>
+    <button class="btn-mini btn-danger" onclick="handleLogout()">Đăng xuất</button>
+</div>    
+      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+
+    <script>
+    // 1. CẤU HÌNH (Đã lấy chính xác từ đoạn mã bạn gửi)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDbmOhw66k7udzJHq5TgAmTqj37eBMsC4",
+      authDomain: "thebaovn-1ce9d.firebaseapp.com",
+      projectId: "thebaovn-1ce9d",
+      storageBucket: "thebaovn-1ce9d.firebasestorage.app",
+      messagingSenderId: "429214977285",
+      appId: "1:429214977285:web:ecfa877da90a68b2bf3b6c"
+    };
+
+
+    // 2. KHỞI TẠO
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+
+    // 3. THEO DÕI TRẠNG THÁI ĐĂNG NHẬP
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            // Ẩn bảng đăng nhập, hiện tên user
+            const modal = document.getElementById('authModal');
+            if(modal) modal.style.display = 'none';
+            
+            const display = document.getElementById('userEmailDisplay');
+            if(display) display.innerText = "👤 " + user.email;
+            
+            console.log("Đã đăng nhập:", user.email);
+            syncDataFromCloud(); // Tải dữ liệu về
+        } else {
+            currentUser = null;
+            // Hiện bảng đăng nhập
+            const modal = document.getElementById('authModal');
+            if(modal) modal.style.display = 'flex';
+            
+            const display = document.getElementById('userEmailDisplay');
+            if(display) display.innerText = "Chưa đăng nhập";
+        }
+    });
+
+
+    // 4. CÁC HÀM XỬ LÝ AUTH (Đăng ký/Đăng nhập/Đăng xuất)
+    function handleLogin() {
+        const e = document.getElementById('txtEmail').value;
+        const p = document.getElementById('txtPassword').value;
+        if(!e || !p) return alert("Vui lòng nhập Email và Mật khẩu!");
+        
+        auth.signInWithEmailAndPassword(e, p)
+            .catch(err => {
+                console.error(err);
+                document.getElementById('authError').innerText = "Lỗi: " + err.message;
+            });
+    }
+
+
+    function handleSignUp() {
+        const e = document.getElementById('txtEmail').value;
+        const p = document.getElementById('txtPassword').value;
+        if(!e || !p) return alert("Vui lòng nhập Email và Mật khẩu!");
+        
+        auth.createUserWithEmailAndPassword(e, p)
+            .then(() => alert("Đăng ký thành công! Hãy bấm Đăng nhập."))
+            .catch(err => {
+                console.error(err);
+                document.getElementById('authError').innerText = "Lỗi: " + err.message;
+            });
+    }
+
+
+    function handleLogout() {
+        if(confirm("Bạn có chắc muốn đăng xuất?")) {
+            auth.signOut();
+            location.reload();
+        }
+    }
+
+
+    // 5. ĐỒNG BỘ DỮ LIỆU LÊN MÂY (Cloud)
+    async function syncDataToCloud(key, data) {
+        if (!currentUser) return;
+        try {
+            await db.collection('UserData').doc(currentUser.uid).set({
+                [key]: JSON.stringify(data),
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log(`[SYNC] Đã lưu ${key} lên Cloud.`);
+        } catch (e) { 
+            console.error("Lỗi lưu dữ liệu:", e); 
+        }
+    }
+
+
+          // 6. TẢI DỮ LIỆU TỪ MÂY VỀ MÁY (CODE ĐÃ SỬA LỖI VÒNG LẶP)
+    async function syncDataFromCloud() {
+        if (!currentUser) return;
+        
+        // Hiển thị loading
+        if(typeof showProgressModal === 'function') showProgressModal("ĐANG ĐỒNG BỘ DỮ LIỆU...");
+        
+        try {
+            const doc = await db.collection('UserData').doc(currentUser.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                
+                // 1. Cập nhật LocalStorage
+                if(data.invoiceHistory) localStorage.setItem('invoiceHistory', data.invoiceHistory);
+                if(data.thebao_debt_list) localStorage.setItem('thebao_debt_list', data.thebao_debt_list);
+                if(data.thebao_customers) localStorage.setItem('thebao_customers', data.thebao_customers);
+                if(data.thebao_inventory) localStorage.setItem('thebao_inventory', data.thebao_inventory);
+                if(data.thebao_store_config) localStorage.setItem('thebao_store_config', data.thebao_store_config);
+                if(data.thebao_catalog_v6) localStorage.setItem('thebao_catalog_v6', data.thebao_catalog_v6);
+                
+                // 2. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC (Thay vì reload trang)
+                // Gọi các hàm load dữ liệu để màn hình cập nhật số liệu mới nhất
+                if(typeof loadStoreConfig === 'function') loadStoreConfig();
+                if(typeof loadCatalog === 'function') loadCatalog();
+                if(typeof loadCustomerList === 'function') loadCustomerList();
+                if(typeof loadInventory === 'function') loadInventory();
+                if(typeof calculateTodayRevenue === 'function') calculateTodayRevenue();
+                if(typeof renderAll === 'function') renderAll();
+                
+                // 3. Thông báo nhẹ nhàng ở góc (Không hiện Alert chặn màn hình nữa)
+                console.log("✅ Đã đồng bộ dữ liệu xong!");
+                const display = document.getElementById('userEmailDisplay');
+                if(display) display.innerText = "👤 " + currentUser.email + " (Đã đồng bộ)";
+
+
+            } else {
+                console.log("Tài khoản mới, chưa có dữ liệu trên Cloud.");
+            }
+        } catch (error) { 
+            console.error("Lỗi tải dữ liệu:", error); 
+        }
+        
+        // Tắt loading
+        if(typeof closeProgressModal === 'function') closeProgressModal();
+    }
+
+
+
+
+
+
+    // 7. GHI ĐÈ CÁC HÀM LƯU ĐỂ TỰ ĐỘNG ĐỒNG BỘ
+    // (Mỗi khi bạn lưu trên máy, nó sẽ tự gửi 1 bản lên Cloud)
+    
+    // Hook History
+    if(typeof saveHistory !== 'undefined') {
+        const old_saveHistory = saveHistory;
+        saveHistory = function(isNew) {
+            old_saveHistory(isNew);
+            syncDataToCloud('invoiceHistory', JSON.parse(localStorage.getItem('invoiceHistory')||"[]"));
+        };
+    }
+
+
+    // Hook Debt (Nợ)
+    if(typeof saveDebtList !== 'undefined') {
+        const old_saveDebtList = saveDebtList;
+        saveDebtList = function(list) {
+            old_saveDebtList(list);
+            syncDataToCloud('thebao_debt_list', list);
+        };
+    }
+
+
+    // Hook Inventory (Kho)
+    if(typeof saveInventory !== 'undefined') {
+        const old_saveInventory = saveInventory;
+        saveInventory = function() {
+            old_saveInventory();
+            syncDataToCloud('thebao_inventory', JSON.parse(localStorage.getItem('thebao_inventory')||"{}"));
+        };
+    }
+
+
+    // Hook Config (Cấu hình)
+    if(typeof saveGlobalSettings !== 'undefined') {
+        const old_saveGlobalSettings = saveGlobalSettings;
+        saveGlobalSettings = function() {
+            old_saveGlobalSettings();
+            syncDataToCloud('thebao_store_config', JSON.parse(localStorage.getItem('thebao_store_config')||"{}"));
+        };
+    }
+    
+       // Hook Customer (Khách hàng)
+    if(typeof addNewCustomer !== 'undefined') {
+        const old_addNewCustomer = addNewCustomer;
+        addNewCustomer = function() {
+            old_addNewCustomer();
+            syncDataToCloud('thebao_customers', JSON.parse(localStorage.getItem('thebao_customers')||"[]"));
+        };
+    }
+
+
+    // --- [MỚI] TÍNH NĂNG ĐỒNG BỘ THỦ CÔNG & NẠP FILE LÊN CLOUD ---
+
+
+    // A. ĐỒNG BỘ THỦ CÔNG (Gửi toàn bộ dữ liệu hiện tại ở LocalStorage lên Cloud)
+    async function manualSyncToCloud() {
+        if (!currentUser) return alert("❌ Vui lòng đăng nhập trước!");
+        
+        const btn = document.querySelector('button[onclick="manualSyncToCloud()"]');
+        const oldText = btn ? btn.innerText : "Đồng bộ";
+        if(btn) {
+            btn.innerText = "⏳ Đang gửi...";
+            btn.disabled = true;
+        }
+
+
+        try {
+            const dataToSync = {
+                invoiceHistory: localStorage.getItem('invoiceHistory') || "[]",
+                thebao_debt_list: localStorage.getItem('thebao_debt_list') || "[]",
+                thebao_customers: localStorage.getItem('thebao_customers') || "[]",
+                thebao_inventory: localStorage.getItem('thebao_inventory') || "{}",
+                thebao_store_config: localStorage.getItem('thebao_store_config') || "{}",
+                thebao_catalog_v6: localStorage.getItem('thebao_catalog_v6') || "[]",
+                thebao_customer_credit: localStorage.getItem('thebao_customer_credit') || "{}"
+            };
+
+
+            // Gửi từng món lên Firestore
+            await db.collection('UserData').doc(currentUser.uid).set(dataToSync, { merge: true });
+
+
+            alert("✅ Đã đồng bộ toàn bộ dữ liệu từ máy lên Cloud thành công!");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Lỗi: " + e.message);
+        } finally {
+            if(btn) {
+                btn.innerText = oldText;
+                btn.disabled = false;
+            }
+        }
+    }
+
+
+    // B. NẠP FILE BACKUP (.JSONL) TRỰC TIẾP LÊN CLOUD
+    function restoreBackupToCloud(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!currentUser) return alert("❌ Vui lòng đăng nhập trước!");
+
+
+        if (!confirm("⚠️ CẢNH BÁO: Hành động này sẽ ghi đè dữ liệu trong file backup này lên Cloud.\nDữ liệu trên Cloud sẽ bị thay thế bởi file này.\nBạn có chắc chắn không?")) {
+            input.value = ''; 
+            return;
+        }
+
+
+        const msg = document.getElementById('cloudStatusMsg');
+        if(msg) {
+            msg.style.display = 'block';
+            msg.innerText = "⏳ Đang đọc file và đẩy lên Cloud (Vui lòng chờ)...";
+        }
+
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                
+                // Các biến chứa dữ liệu gom lại từ file
+                let cloud_configs = null; 
+                let cloud_catalog = null; 
+                let cloud_customers = null; 
+                let cloud_credits = null; 
+                let cloud_inventory = null;
+                let cloud_history = [];
+                let cloud_debts = [];
+
+
+                // 1. Phân tích file (Parse)
+                for (let line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const obj = JSON.parse(line);
+                        if (obj.type === 'meta') {
+                            cloud_configs = obj.configs;
+                            cloud_catalog = obj.catalog;
+                            cloud_customers = obj.customers;
+                            cloud_credits = obj.credits;
+                            cloud_inventory = obj.inventory;
+                        } else if (obj.type === 'history') {
+                            cloud_history.push(obj.data);
+                        } else if (obj.type === 'debt') {
+                            cloud_debts.push(obj.data);
+                        }
+                    } catch (err) { console.error("Lỗi dòng JSON:", err); }
+                }
+
+
+                // 2. Chuẩn bị gói tin
+                const payload = {};
+                if (cloud_history.length > 0) payload.invoiceHistory = JSON.stringify(cloud_history);
+                if (cloud_debts.length > 0) payload.thebao_debt_list = JSON.stringify(cloud_debts);
+                
+                // Meta data (nếu có trong file)
+                if (cloud_configs) payload.thebao_store_config = cloud_configs;
+                if (cloud_catalog) payload.thebao_catalog_v6 = cloud_catalog;
+                if (cloud_customers) payload.thebao_customers = cloud_customers;
+                if (cloud_inventory) payload.thebao_inventory = cloud_inventory;
+                if (cloud_credits) payload.thebao_customer_credit = cloud_credits;
+
+
+                payload.lastUpdated = firebase.firestore.FieldValue.serverTimestamp();
+
+
+                // 3. Đẩy lên Cloud
+                await db.collection('UserData').doc(currentUser.uid).set(payload, { merge: true });
+
+
+                if(msg) msg.innerText = "✅ Đã tải file lên Cloud thành công! Đang đồng bộ lại xuống máy...";
+                alert("✅ Thành công! Dữ liệu Cloud đã được cập nhật từ file.");
+                
+                // 4. Tự động tải lại về máy để đồng bộ hiển thị
+                syncDataFromCloud();
+
+
+            } catch (err) {
+                alert("❌ Lỗi xử lý file: " + err.message);
+                if(msg) msg.innerText = "❌ Có lỗi xảy ra.";
+            } finally {
+                input.value = ''; // Reset input
+            }
+               };
+        reader.readAsText(file);
+    }
+
+
+    // C. [MỚI] ĐỒNG BỘ TỪ CLOUD VỀ MÁY (THỦ CÔNG)
+    async function manualSyncFromCloud() {
+        if (!currentUser) return alert("❌ Vui lòng đăng nhập trước!");
+        
+        // Cảnh báo quan trọng để tránh mất dữ liệu vừa nhập
+        if (!confirm("⚠️ CẢNH BÁO QUAN TRỌNG:\n\nHành động này sẽ tải dữ liệu từ Cloud về và GHI ĐÈ lên dữ liệu hiện tại trên máy này.\n\nNếu bạn vừa nhập đơn hàng trên máy này mà chưa kịp đồng bộ lên, hãy bấm 'Hủy' và chọn 'Đồng bộ Lên' trước.\n\nBạn có chắc chắn muốn tải về không?")) {
+            return;
+        }
+
+
+        // Gọi hàm đồng bộ có sẵn (đã viết ở phần Firebase bên dưới)
+        // Hàm này đã bao gồm việc hiển thị Loading và cập nhật lại giao diện ngay lập tức
+        await syncDataFromCloud();
+        
+        alert("✅ Đã tải dữ liệu từ Cloud về máy thành công!");
+    }
+    </script>
+</body>
+</html>
