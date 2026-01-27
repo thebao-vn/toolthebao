@@ -975,11 +975,24 @@
             </div>
 
 
-                       <div class="inv-footer">
-                <span id="outFooterMsg"></span> <b id="outHotlineFooter">...</b>
+
+
+
+
+
+
+            <div class="inv-footer">
+                Cảm ơn bạn đã tin tưởng và ủng hộ!<br>
+                Mọi thắc mắc vui lòng liên hệ <b id="outHotlineFooter">...</b>
             </div>
         </div>
     </div>
+
+
+
+
+
+
 
 
     <div id="debtModal" class="modal-overlay">
@@ -1170,10 +1183,14 @@
                     </div>
 
 
+
+
+
+
+
+
                     <div class="barcode-section"><svg id="hist_trackingBarcode"></svg></div>
-                                       <div class="inv-footer">
-                        <span id="hist_outFooterMsg"></span> <b id="hist_outHotlineFooter">...</b>
-                    </div>
+                    <div class="inv-footer">Cảm ơn bạn đã tin tưởng và ủng hộ!<br>Mọi thắc mắc vui lòng liên hệ <b id="hist_outHotlineFooter">...</b></div>
                 </div>
             </div>
         </div>
@@ -1211,12 +1228,7 @@
                 <div id="setTab_shop" class="tab-content active">
                     <div class="form-group"><label>Tên Shop:</label><input type="text" id="cfgBrandName"></div>
                     <div class="form-group"><label>Slogan / Địa chỉ:</label><input type="text" id="cfgSlogan"></div>
-                                       <div class="form-group"><label>Hotline:</label><input type="text" id="cfgHotline"></div>
-                    
-                    <div class="form-group" style="margin-top:10px;">
-                        <label>Lời nhắn cuối hóa đơn:</label>
-                        <textarea id="cfgFooterMsg" rows="2" placeholder="Cảm ơn... Mọi thắc mắc liên hệ..." style="font-family:sans-serif; width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing: border-box;"></textarea>
-                    </div>
+                    <div class="form-group"><label>Hotline:</label><input type="text" id="cfgHotline"></div>
                     <div class="form-row" style="margin-top:10px;">
                         <div class="form-group"><label>Ngân hàng:</label><select id="cfgBankId"><option value="MB">MB Bank</option><option value="VCB">Vietcombank</option><option value="TCB">Techcombank</option><option value="MOMO">Momo</option><option value="VPB">VPBank</option><option value="ACB">ACB</option><option value="ICB">VietinBank</option><option value="BIDV">BIDV</option><option value="TPB">TPBank</option></select></div>
                         <div class="form-group"><label>Số tài khoản:</label><input type="text" id="cfgAccNum"></div>
@@ -1537,17 +1549,7 @@
 
 
 
-               const defaultStoreConfig = { 
-            brandName: "THE BÁO", 
-            slogan: "Dịch vụ thẻ cào trực tuyến", 
-            hotline: "0354.830.400", 
-            bankId: "MB", 
-            accNum: "0354830400", 
-            accName: "NGUYEN VAN A",
-            footerMsg: "Cảm ơn bạn đã tin tưởng và ủng hộ!\nMọi thắc mắc vui lòng liên hệ"
-        };
-
-
+        const defaultStoreConfig = { brandName: "THE BÁO", slogan: "Dịch vụ thẻ cào trực tuyến", hotline: "0354.830.400", bankId: "MB", accNum: "0354830400", accName: "NGUYEN VAN A" };
 
 
 
@@ -1604,24 +1606,24 @@
         const formatReadableCode = (code) => code ? code.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim() : "";
         
         // --- SETTINGS UI ---
-               function openSettings() { 
+        function openSettings() { 
             document.getElementById('cfgBrandName').value = storeConfig.brandName; 
             document.getElementById('cfgSlogan').value = storeConfig.slogan; 
             document.getElementById('cfgHotline').value = storeConfig.hotline; 
             document.getElementById('cfgBankId').value = storeConfig.bankId; 
             document.getElementById('cfgAccNum').value = storeConfig.accNum; 
             document.getElementById('cfgAccName').value = storeConfig.accName; 
-            
-            // [MỚI] Load lời nhắn chân trang
-            document.getElementById('cfgFooterMsg').value = storeConfig.footerMsg || defaultStoreConfig.footerMsg;
-
-
             selectedCatIndex = null; selectedProdIndex = null; 
             renderCatalogSettings(); renderCustomerTable(); renderInventoryTab();
             document.getElementById('settingsModal').style.display = 'flex'; 
         }
-
-
+        function switchSettingTab(tab, btn) {
+            document.querySelectorAll('#settingsModal .tab-item').forEach(t => t.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            document.querySelectorAll('#settingsModal .tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`setTab_${tab}`).classList.add('active');
+        }
+        function loadStoreConfig() { storeConfig = JSON.parse(localStorage.getItem('thebao_store_config') || JSON.stringify(defaultStoreConfig)); }
         function saveGlobalSettings() {
             storeConfig.brandName = document.getElementById('cfgBrandName').value;
             storeConfig.slogan = document.getElementById('cfgSlogan').value;
@@ -1629,14 +1631,11 @@
             storeConfig.bankId = document.getElementById('cfgBankId').value;
             storeConfig.accNum = document.getElementById('cfgAccNum').value;
             storeConfig.accName = document.getElementById('cfgAccName').value;
-            
-            // [MỚI] Lưu lời nhắn chân trang
-            storeConfig.footerMsg = document.getElementById('cfgFooterMsg').value;
-
-
             localStorage.setItem('thebao_store_config', JSON.stringify(storeConfig));
             updateInvoiceHeader(); alert("✅ Đã lưu cấu hình!");
         }
+
+
 
 
 
@@ -2176,13 +2175,7 @@
             document.getElementById('outBrandName').innerText = storeConfig.brandName;
             document.getElementById('outSlogan').innerText = storeConfig.slogan;
             document.getElementById('outHotline').innerText = `☎ Hotline: ${storeConfig.hotline}`;
-                       document.getElementById('outHotlineFooter').innerText = storeConfig.hotline;
-            
-            // [MỚI] Hiển thị lời nhắn chân trang (đổi xuống dòng thành <br>)
-            const footerTxt = storeConfig.footerMsg || defaultStoreConfig.footerMsg;
-            document.getElementById('outFooterMsg').innerHTML = footerTxt.replace(/\n/g, '<br>');
-
-
+            document.getElementById('outHotlineFooter').innerText = storeConfig.hotline;
             const name = document.getElementById('inpName').value;
             const phone = document.getElementById('inpPhone').value;
             const date = document.getElementById('inpDate').value;
@@ -2451,14 +2444,7 @@
             document.getElementById('hist_outBrandName').innerText = storeConfig.brandName;
             document.getElementById('hist_outSlogan').innerText = storeConfig.slogan;
             document.getElementById('hist_outHotline').innerText = `☎ Hotline: ${storeConfig.hotline}`;
-                       document.getElementById('hist_outHotlineFooter').innerText = storeConfig.hotline;
-
-
-            // [MỚI] Hiển thị lời nhắn chân trang trong lịch sử
-            const fMsg = storeConfig.footerMsg || defaultStoreConfig.footerMsg;
-            document.getElementById('hist_outFooterMsg').innerHTML = fMsg.replace(/\n/g, '<br>');
-
-
+            document.getElementById('hist_outHotlineFooter').innerText = storeConfig.hotline;
             document.getElementById('hist_outInvoiceID').innerText = h.id;
             document.getElementById('hist_outDate').innerText = `${h.date.split('-')[2]}/${h.date.split('-')[1]}/${h.date.split('-')[0]} - ${h.time}`;
             document.getElementById('hist_outName').innerText = h.name;
